@@ -85,13 +85,39 @@ below is optional, and the file is never part of the published package:
 
 House defaults live in one place — `DEFAULTS` at the top of `scripts/generate-ci.mjs`.
 
-## What the default commands expect
+## How a plugin is built
 
-Not yet built — the repo has no toolchain of its own so far:
+```bash
+npm ci
+npm run ci:test  -- extra-task-states     # manifest/layout checks + tsc against the contract
+npm run ci:build -- extra-task-states     # -> dist/<id>/<version>/
+npm run ci:test                            # omit the id for every plugin
+```
 
-- **frontend**: a root `package.json` with `ci:test` and `ci:build` scripts, each taking a
-  plugin id and writing `$PLUGIN_DIST` (`dist/<id>/<version>/`: `manifest.json` +
-  `frontend/**`), mirroring `web/scripts/build-examples.mjs` in the life-manager repo.
-  The jobs export `PLUGIN_ID`, `PLUGIN_VERSION`, `PLUGIN_DIR` and `PLUGIN_DIST`.
-- **backend**: the plugin directory is its own cargo package producing a `cdylib` for
-  `wasm32-unknown-unknown`.
+`scripts/build-plugin.mjs` is a thin wrapper around `vendor/vite.plugin-config.mjs`, which
+is copied unmodified from life-manager's `plugins/base/_shared/`. Same builder, same
+externals, same output layout as a base plugin — the server is not supposed to be able to
+tell them apart, and the build of `extra-task-states` here is byte-identical to the one
+upstream produces apart from a source-path comment.
+
+`scripts/test-plugin.mjs` typechecks **one plugin at a time**, against a throwaway
+tsconfig that narrows `include` to that plugin's sources. `tsc -p tsconfig.json` would
+check them all at once, which would let a type error in plugin B fail plugin A's
+pipeline — the coupling the per-plugin job chains exist to avoid. It also checks the
+manifest against the disk: a declared `frontend.module` outside `frontend/`, a `style`
+with no file, a `backend.module` with no `Cargo.toml`.
+
+What the typecheck is really testing is `vendor/kernel.d.ts` — the plugin compiles against
+the published contract and nothing else (SPEC §6.4), so a contract that dropped a type it
+uses fails in CI rather than at load time in a browser. See `vendor/README.md`.
+
+## Layout
+
+```
+.githooks/pre-commit        regenerates .gitlab-ci.yml and stages it
+scripts/plugins.mjs         what a plugin directory is — one definition, three consumers
+scripts/generate-ci.mjs     manifests -> .gitlab-ci.yml
+scripts/build-plugin.mjs    one plugin -> dist/<id>/<version>/
+scripts/test-plugin.mjs     layout checks + tsc, per plugin
+vendor/                     kernel.d.ts and the reference Vite config, copied upstream
+```

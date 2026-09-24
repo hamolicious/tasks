@@ -65,12 +65,10 @@
  * also the file GitLab would have refused to start a pipeline from.
  */
 
-import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
-const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const pluginsDir = join(repoRoot, "plugins");
+import { defaultWasmPath, readPlugins, repoRoot } from "./plugins.mjs";
 
 /** GitLab reads `.gitlab-ci.yml` and only that name unless the project overrides the path. */
 const OUT_FILE = ".gitlab-ci.yml";
@@ -78,11 +76,11 @@ const OUT_FILE = ".gitlab-ci.yml";
 /**
  * The house defaults — the one place to change how *every* plugin is tested and built.
  *
- * The frontend commands assume a root `package.json` exposing `ci:test` and `ci:build`,
- * each taking a plugin id and writing `dist/<id>/<version>/` (manifest + `frontend/**`),
- * mirroring `web/scripts/build-examples.mjs` in the life-manager repo. The backend
- * commands assume the plugin directory is its own cargo package whose `cdylib` is built
- * for `wasm32-unknown-unknown`, as in `plugins/examples/hello-backend` there.
+ * The frontend commands are the repo's own `ci:test` / `ci:build` scripts, each taking a
+ * plugin id and writing `$PLUGIN_DIST` (`dist/<id>/<version>/`: manifest + `frontend/**`).
+ * The backend commands assume the plugin directory is its own cargo package whose
+ * `cdylib` is built for `wasm32-unknown-unknown`, as `plugins/examples/hello-backend` is
+ * in the life-manager repo — speculative until the first plugin here grows a wasm half.
  */
 const DEFAULTS = {
   images: {
@@ -113,102 +111,6 @@ const DEFAULTS = {
     ],
   },
 };
-
-// ── manifests ──────────────────────────────────────────────────────────────────────────
-
-const SEMVER = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)*$/;
-
-/** Read + validate every plugin directory. Anything wrong here fails the commit, loudly. */
-function readPlugins() {
-  if (!existsSync(pluginsDir)) return [];
-
-  const problems = [];
-  const plugins = [];
-
-  const names = readdirSync(pluginsDir)
-    .filter((name) => !name.startsWith("_") && !name.startsWith("."))
-    .filter((name) => name !== "dist")
-    .filter((name) => statSync(join(pluginsDir, name)).isDirectory())
-    .sort();
-
-  for (const name of names) {
-    const dir = join(pluginsDir, name);
-    const manifestPath = join(dir, "manifest.json");
-
-    // No manifest is not an error: the life-manager repo keeps Rust-only host fixtures
-    // (`examples/hello-backend`) beside real plugins, and its own build scripts skip them
-    // the same way. A directory with no manifest simply has no pipeline.
-    if (!existsSync(manifestPath)) continue;
-
-    let manifest;
-    try {
-      manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-    } catch (error) {
-      problems.push(`plugins/${name}/manifest.json: not valid JSON — ${error.message}`);
-      continue;
-    }
-
-    let ci = {};
-    const ciPath = join(dir, "ci.json");
-    if (existsSync(ciPath)) {
-      try {
-        ci = JSON.parse(readFileSync(ciPath, "utf8"));
-      } catch (error) {
-        problems.push(`plugins/${name}/ci.json: not valid JSON — ${error.message}`);
-        continue;
-      }
-    }
-
-    if (manifest.id !== name) {
-      problems.push(
-        `plugins/${name}/manifest.json: id is "${manifest.id}" — the directory name is the plugin id`,
-      );
-      continue;
-    }
-    if (typeof manifest.version !== "string" || !SEMVER.test(manifest.version)) {
-      problems.push(
-        `plugins/${name}/manifest.json: version ${JSON.stringify(manifest.version)} is not x.y.z — ` +
-          `it names the published package and its artifact paths`,
-      );
-      continue;
-    }
-
-    const frontend = Boolean(manifest.frontend?.module);
-    const backend = Boolean(manifest.backend?.module);
-    if (!frontend && !backend) {
-      problems.push(
-        `plugins/${name}/manifest.json: declares neither frontend.module nor backend.module — ` +
-          `there is nothing to build`,
-      );
-      continue;
-    }
-
-    if (ci.enabled === false) continue;
-
-    plugins.push({
-      id: manifest.id,
-      version: manifest.version,
-      frontend,
-      backend,
-      backendModule: manifest.backend?.module,
-      ci,
-    });
-  }
-
-  if (problems.length > 0) {
-    console.error(`generate-ci: cannot generate ${OUT_FILE}\n`);
-    for (const problem of problems) console.error(`  ! ${problem}`);
-    console.error("");
-    process.exit(1);
-  }
-
-  return plugins;
-}
-
-/** Default crate artifact for a plugin's wasm half: cargo snake-cases the package name. */
-function defaultWasmPath(id) {
-  return `target/wasm32-unknown-unknown/release/${id.replaceAll("-", "_")}.wasm`;
-}
 
 // ── a very small YAML writer ───────────────────────────────────────────────────────────
 //
@@ -608,7 +510,7 @@ function pluginBlocks(plugin) {
 // ── entry point ────────────────────────────────────────────────────────────────────────
 
 const args = new Set(process.argv.slice(2));
-const plugins = readPlugins();
+const plugins = readPlugins(`generate-ci: cannot generate ${OUT_FILE}`).filter((plugin) => plugin.enabled);
 const yaml = generate(plugins);
 const outPath = join(repoRoot, OUT_FILE);
 

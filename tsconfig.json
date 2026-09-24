@@ -1,0 +1,37 @@
+{
+  /*
+   * Every plugin in this repo compiles against `vendor/kernel.d.ts` and nothing else —
+   * the one generated file the server serves at `/kernel.d.ts` (SPEC §6.4). There is no
+   * `paths` mapping for `@kernel` because that file is an ambient `declare module
+   * "@kernel"`: including it *is* the mapping.
+   *
+   * `react` and `yjs` are devDependencies here for exactly one reason — `kernel.d.ts`
+   * imports types from both, so they have to resolve for the contract itself to
+   * typecheck. At runtime neither is bundled: both are import-map singletons the server
+   * resolves, which is what `RUNTIME_EXTERNALS` in vendor/vite.plugin-config.mjs enforces.
+   *
+   * `scripts/test-plugin.mjs` extends this file per plugin, narrowing `include` to one
+   * plugin's sources, so a plugin is never failed by its neighbour's type error.
+   */
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "jsx": "react-jsx",
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["vendor/kernel.d.ts", "plugins/*/src/**/*.ts", "plugins/*/src/**/*.tsx"]
+}
