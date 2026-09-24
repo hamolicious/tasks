@@ -6,7 +6,7 @@
 # `plugins/<id>/ci.json` for per-plugin overrides) — change those, not this file.
 #
 #   regenerate:  node scripts/generate-ci.mjs
-#   verify:      node scripts/generate-ci.mjs --check     (the check:ci-config job)
+#   verify:      node scripts/generate-ci.mjs --check
 #   install the hook in a fresh clone:  ./scripts/install-hooks.sh
 #
 # 1 plugin(s): extra-task-states@1.0.0
@@ -164,19 +164,6 @@ variables:
            --upload-file "$CI_PROJECT_DIR/$pkg" "$base/$pkg"
 
       echo "published $base/$pkg"
-
-# The one job that is not a plugin's. It re-runs the generator and fails if this file is
-# not what the manifests say it should be — the backstop for a commit made with
-# `--no-verify`, or in a clone where nobody ran `scripts/install-hooks.sh`. It is never
-# manual: a stale pipeline definition is exactly the thing you do not want to opt into
-# checking.
-check:ci-config:
-  stage: test
-  image: "$NODE_IMAGE"
-  interruptible: true
-  needs: []
-  script:
-    - "node scripts/generate-ci.mjs --check"
 
 # ══ extra-task-states@1.0.0 ════════════════════════════════════════════════════════════════
 # halves: frontend

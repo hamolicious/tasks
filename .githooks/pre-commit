@@ -8,13 +8,12 @@
 # along with the manifest change that caused it.
 #
 # Installed by `scripts/install-hooks.sh` (which points `core.hooksPath` here). Bypass with
-# `git commit --no-verify` — the `check:ci-config` job in the pipeline catches what that
-# skips.
+# `git commit --no-verify`, and nothing downstream will notice — this hook is the only
+# thing keeping the file current.
 #
 # Known limitation, deliberate: the generator reads the **working tree**, not the index. If
 # you stage a manifest edit while leaving a second one unstaged, the generated file
-# describes both. `check:ci-config` fails the pipeline of such a commit, which is the
-# cheapest place to notice.
+# describes both. `node scripts/generate-ci.mjs --check` says so after the fact.
 
 set -euo pipefail
 

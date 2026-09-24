@@ -18,8 +18,8 @@ plugins/<id>/
 ```
 
 This points `core.hooksPath` at `.githooks/`, which git cannot do for you. Without it the
-pre-commit hook does not run and `.gitlab-ci.yml` goes stale — the `check:ci-config` job
-fails the pipeline when that happens, so it is caught either way, just later.
+pre-commit hook does not run, and `.gitlab-ci.yml` quietly goes stale — nothing in the
+pipeline checks for that, so the hook is the whole mechanism.
 
 ## The pipeline is generated, not written
 
@@ -29,7 +29,7 @@ manifest, or `plugins/<id>/ci.json`, and commit.
 
 ```bash
 node scripts/generate-ci.mjs            # regenerate
-node scripts/generate-ci.mjs --check    # fail if stale (what CI runs)
+node scripts/generate-ci.mjs --check    # fail if stale
 node scripts/generate-ci.mjs --stdout   # preview
 ```
 

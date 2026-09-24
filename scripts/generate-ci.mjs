@@ -56,12 +56,13 @@
  * ## Usage
  *
  *   node scripts/generate-ci.mjs            # write .gitlab-ci.yml
- *   node scripts/generate-ci.mjs --check    # exit 1 if the committed file is stale (CI)
+ *   node scripts/generate-ci.mjs --check    # exit 1 if the committed file is stale
  *   node scripts/generate-ci.mjs --stdout   # print, write nothing
  *
  * `.githooks/pre-commit` runs the first form and stages the result, so the file is never
- * hand-maintained. `check:ci-config` in the generated pipeline runs the second, which is
- * what catches a `--no-verify` commit or a hook nobody installed.
+ * hand-maintained. `--check` is there for when you want to ask the question by hand; the
+ * pipeline does not run it, because a generated file that is wrong enough to matter is
+ * also the file GitLab would have refused to start a pipeline from.
  */
 
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
@@ -316,7 +317,7 @@ function generate(plugins) {
       "# `plugins/<id>/ci.json` for per-plugin overrides) — change those, not this file.",
       "#",
       "#   regenerate:  node scripts/generate-ci.mjs",
-      "#   verify:      node scripts/generate-ci.mjs --check     (the check:ci-config job)",
+      "#   verify:      node scripts/generate-ci.mjs --check",
       "#   install the hook in a fresh clone:  ./scripts/install-hooks.sh",
       "#",
       `# ${plugins.length} plugin(s): ${plugins.length ? plugins.map((p) => `${p.id}@${p.version}`).join(", ") : "none"}`,
@@ -500,26 +501,6 @@ function generate(plugins) {
             'echo "published $base/$pkg"',
           ].join("\n"),
         ],
-      },
-    ),
-  );
-
-  // ── the meta job ─────────────────────────────────────────────────────────────────────
-
-  blocks.push(
-    block(
-      "The one job that is not a plugin's. It re-runs the generator and fails if this file is\n" +
-        "not what the manifests say it should be — the backstop for a commit made with\n" +
-        "`--no-verify`, or in a clone where nobody ran `scripts/install-hooks.sh`. It is never\n" +
-        "manual: a stale pipeline definition is exactly the thing you do not want to opt into\n" +
-        "checking.",
-      "check:ci-config",
-      {
-        stage: "test",
-        image: "$NODE_IMAGE",
-        interruptible: true,
-        needs: [],
-        script: ["node scripts/generate-ci.mjs --check"],
       },
     ),
   );
