@@ -1,5 +1,5 @@
 /**
- * `@kernel` — the Life Manager plugin contract.
+ * `@kernel` — the ddd plugin contract.
  *
  * Generated from web/kernel-api/src by web/scripts/build-kernel-dts.mjs.
  * Do not edit: edit the source and re-run `npm run kernel:dts`.
@@ -1088,19 +1088,19 @@ declare module "@kernel" {
    * **FROZEN.**
    */
   /** A CSS custom property the kernel defines a value for. */
-  export type ThemeTokenName = "--lm-bg" | "--lm-bg-subtle" | "--lm-bg-raised" | "--lm-bg-overlay" | "--lm-border" | "--lm-border-strong" | "--lm-text" | "--lm-text-muted" | "--lm-text-inverse" | "--lm-link" | "--lm-accent" | "--lm-accent-text" | "--lm-accent-subtle" | "--lm-danger" | "--lm-danger-text" | "--lm-warning" | "--lm-success" | "--lm-focus-ring" | "--lm-selection" | "--lm-shadow-1" | "--lm-shadow-2" | "--lm-font-sans" | "--lm-font-mono" | "--lm-radius" | "--lm-radius-lg" | "--lm-space" | "--lm-tap-target";
+  export type ThemeTokenName = "--ddd-bg" | "--ddd-bg-subtle" | "--ddd-bg-raised" | "--ddd-bg-overlay" | "--ddd-border" | "--ddd-border-strong" | "--ddd-text" | "--ddd-text-muted" | "--ddd-text-inverse" | "--ddd-link" | "--ddd-accent" | "--ddd-accent-text" | "--ddd-accent-subtle" | "--ddd-danger" | "--ddd-danger-text" | "--ddd-warning" | "--ddd-success" | "--ddd-focus-ring" | "--ddd-selection" | "--ddd-shadow-1" | "--ddd-shadow-2" | "--ddd-font-sans" | "--ddd-font-mono" | "--ddd-radius" | "--ddd-radius-lg" | "--ddd-space" | "--ddd-tap-target";
   export type ThemeTokens = Readonly<Record<ThemeTokenName, string>>;
   export type ColorScheme = "light" | "dark";
   export type ColorSchemePreference = ColorScheme | "system";
   /**
    * Kernel default **light** tokens. Text/background pairs clear WCAG AA:
-   * `--lm-text` on `--lm-bg` ≈ 14.9:1, `--lm-text-muted` ≈ 5.3:1,
-   * `--lm-accent-text` on `--lm-accent` ≈ 5.2:1.
+   * `--ddd-text` on `--ddd-bg` ≈ 14.9:1, `--ddd-text-muted` ≈ 5.3:1,
+   * `--ddd-accent-text` on `--ddd-accent` ≈ 5.2:1.
    */
   export const DEFAULT_LIGHT_TOKENS: ThemeTokens;
   /**
-   * Kernel default **dark** tokens. `--lm-text` on `--lm-bg` ≈ 13.6:1,
-   * `--lm-text-muted` ≈ 6.4:1, `--lm-accent-text` on `--lm-accent` ≈ 8.1:1.
+   * Kernel default **dark** tokens. `--ddd-text` on `--ddd-bg` ≈ 13.6:1,
+   * `--ddd-text-muted` ≈ 6.4:1, `--ddd-accent-text` on `--ddd-accent` ≈ 8.1:1.
    */
   export const DEFAULT_DARK_TOKENS: ThemeTokens;
   /** Every token name, in declaration order. */

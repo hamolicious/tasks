@@ -106,7 +106,7 @@ export function pluginConfig({ root, outDir, entry }) {
     },
     plugins: [
       {
-        name: "lm-plugin-package",
+        name: "ddd-plugin-package",
         closeBundle() {
           // The manifest travels with the build — the server serves this directory as
           // the installed plugin, so the copy here is what `/api/plugins` reads.

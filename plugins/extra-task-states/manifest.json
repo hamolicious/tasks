@@ -1,6 +1,6 @@
 {
   "id": "extra-task-states",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "kernel": "^1.0",
   "dependencies": {
     "markdown": "^1.0"
@@ -13,6 +13,6 @@
   },
   "name": "Useful extra task states",
   "description": "Adds `[/]` in progress, `[-]` dropped and `[?]` question to the markdown task-state registry (SPEC §6.6).",
-  "author": "Life Manager examples",
+  "author": "ddd examples",
   "license": "MIT OR Apache-2.0"
 }

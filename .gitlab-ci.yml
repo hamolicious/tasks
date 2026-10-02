@@ -9,7 +9,7 @@
 #   verify:      node scripts/generate-ci.mjs --check
 #   install the hook in a fresh clone:  ./scripts/install-hooks.sh
 #
-# 1 plugin(s): extra-task-states@1.0.0
+# 1 plugin(s): extra-task-states@1.0.1
 # ─────────────────────────────────────────────────────────────────────────────────
 
 # Branch pipelines only. Every rule below keys off $CI_COMMIT_BRANCH, and letting
@@ -170,13 +170,13 @@ variables:
 
       echo "published $base/$pkg"
 
-# ══ extra-task-states@1.0.0 ════════════════════════════════════════════════════════════════
+# ══ extra-task-states@1.0.1 ════════════════════════════════════════════════════════════════
 # halves: frontend
 
 .vars:extra-task-states:
   variables:
     PLUGIN_ID: extra-task-states
-    PLUGIN_VERSION: "1.0.0"
+    PLUGIN_VERSION: "1.0.1"
 
 # Automatic only for a default-branch commit that touched this plugin; manual everywhere
 # else, and `allow_failure` so an un-clicked chain still leaves the pipeline green.

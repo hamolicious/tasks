@@ -80,7 +80,7 @@ const OUT_FILE = ".gitlab-ci.yml";
  * plugin id and writing `$PLUGIN_DIST` (`dist/<id>/<version>/`: manifest + `frontend/**`).
  * The backend commands assume the plugin directory is its own cargo package whose
  * `cdylib` is built for `wasm32-unknown-unknown`, as `plugins/examples/hello-backend` is
- * in the life-manager repo — speculative until the first plugin here grows a wasm half.
+ * in the ddd repo — speculative until the first plugin here grows a wasm half.
  */
 const DEFAULTS = {
   images: {

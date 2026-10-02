@@ -1,6 +1,6 @@
-# life-manager-plugins
+# ddd-plugins
 
-Third-party plugins for [life-manager](../life-manager), one directory per plugin, each
+Third-party plugins for [ddd](../ddd), one directory per plugin, each
 independently versioned and independently published to this project's GitLab **generic**
 package registry — which is where the in-app installer plugin reads them from.
 
@@ -95,7 +95,7 @@ npm run ci:test                            # omit the id for every plugin
 ```
 
 `scripts/build-plugin.mjs` is a thin wrapper around `vendor/vite.plugin-config.mjs`, which
-is copied unmodified from life-manager's `plugins/base/_shared/`. Same builder, same
+is copied unmodified from ddd's `plugins/base/_shared/`. Same builder, same
 externals, same output layout as a base plugin — the server is not supposed to be able to
 tell them apart, and the build of `extra-task-states` here is byte-identical to the one
 upstream produces apart from a source-path comment.

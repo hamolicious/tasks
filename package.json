@@ -1,9 +1,9 @@
 {
-  "name": "life-manager-plugins",
+  "name": "ddd-plugins",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Third-party plugins for life-manager, built and published one at a time",
+  "description": "Third-party plugins for ddd, built and published one at a time",
   "license": "MIT",
   "scripts": {
     "ci:test": "node scripts/test-plugin.mjs",

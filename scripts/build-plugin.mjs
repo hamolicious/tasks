@@ -7,7 +7,7 @@
  *   node scripts/build-plugin.mjs                       # every plugin with a frontend half
  *
  * The build itself is `vendor/vite.plugin-config.mjs`, copied unmodified from the
- * life-manager repo. That is the whole point: a plugin here is built by the same function
+ * ddd repo. That is the whole point: a plugin here is built by the same function
  * the base distribution is built by, with the same externals and the same output layout,
  * so the server cannot tell the two apart. Anything this script adds beyond calling it
  * would be a way for them to differ.
