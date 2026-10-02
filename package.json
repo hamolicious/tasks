@@ -1,19 +1,17 @@
 {
-  "name": "ddd-plugins",
-  "version": "0.0.0",
+  "name": "extra-task-states",
   "private": true,
   "type": "module",
-  "description": "Third-party plugins for ddd, built and published one at a time",
-  "license": "MIT",
   "scripts": {
-    "ci:test": "node scripts/test-plugin.mjs",
-    "ci:build": "node scripts/build-plugin.mjs",
-    "ci:generate": "node scripts/generate-ci.mjs"
+    "build": "vite build",
+    "watch": "vite build --watch",
+    "check": "tsc --noEmit",
+    "types": "ddd plugin types"
   },
   "devDependencies": {
-    "@types/react": "^18.3.31",
-    "typescript": "~5.9.3",
     "vite": "^8.3.0",
-    "yjs": "^13.6.20"
+    "typescript": "~5.9.3",
+    "@types/react": "^18.3.31",
+    "yjs": "^13.6.29"
   }
 }

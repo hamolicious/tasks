@@ -1,0 +1,17 @@
+{
+  "id": "extra-task-states",
+  "version": "1.1.0",
+  "kernel": "^3.1",
+  "dependencies": {
+    "markdown": "^3.0"
+  },
+  "peerLibraries": {
+    "react": "^18.0.0"
+  },
+  "frontend": {
+    "module": "frontend/index.mjs"
+  },
+  "name": "Extra task states",
+  "description": "Adds three task markers: [/] in progress, [-] dropped, [?] question.",
+  "license": "MIT OR Apache-2.0"
+}

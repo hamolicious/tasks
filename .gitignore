@@ -1,8 +1,4 @@
 node_modules/
 dist/
-
-# Written by scripts/test-plugin.mjs, one per plugin, removed when tsc exits.
-.tsconfig.*.json
-
-# npm's download cache, pointed here by the pipeline so GitLab can cache it.
-.npm/
+backend/target/
+*.zip
