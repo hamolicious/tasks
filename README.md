@@ -51,6 +51,7 @@ npm run types -- --server https://your-server   # refresh types/ after the serve
 
 ## Releasing
 
-Bump `version` in `manifest.json`, push to `main`, and run `mise run plugin tasks` in
-[ddd-publish](https://gitlab.slayhouse.net/published/ddd-publish). It tests, builds and
-publishes the plugin; a version that is already published is not replaced.
+Bump `version` in `manifest.json`, push to `main`, and run `mise run plugin-prod tasks` in
+[ddd-publish](https://gitlab.slayhouse.net/published/ddd-publish). It tests, builds,
+publishes the plugin and releases it on GitHub; a version that is already published is not
+replaced. `mise run plugin-dev tasks` only publishes to the package registry.
