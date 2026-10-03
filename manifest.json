@@ -1,9 +1,13 @@
 {
   "id": "extra-task-states",
-  "version": "1.1.0",
+  "version": "1.4.3",
   "kernel": "^3.1",
   "dependencies": {
     "markdown": "^3.0"
+  },
+  "optionalDependencies": {
+    "icons": "^2.0",
+    "settings": "^2.0"
   },
   "peerLibraries": {
     "react": "^18.0.0"
@@ -12,6 +16,6 @@
     "module": "frontend/index.mjs"
   },
   "name": "Extra task states",
-  "description": "Adds three task markers: [/] in progress, [-] dropped, [?] question.",
+  "description": "Adds task markers beyond to do and done: [/] in progress, [-] dropped, [?] question, or your own, each with a name and an icon.",
   "license": "MIT OR Apache-2.0"
 }
