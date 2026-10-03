@@ -2,23 +2,41 @@ import type { Kernel } from "@kernel";
 import { addTaskState, type MarkdownTaskState } from "plugin:markdown";
 
 import { StatesSettings } from "./Settings.js";
-import { glyphFor, parseStates, STATES_KEY, textStyleOf, usableStates, type TaskStateSetting } from "./states.js";
+import {
+  BUILTINS_KEY,
+  builtinOrder,
+  glyphFor,
+  parseBuiltins,
+  parseStates,
+  STATES_KEY,
+  textStyleOf,
+  usableStates,
+  type TaskStateSetting,
+} from "./states.js";
 
 type IconsModule = typeof import("plugin:icons");
 type SettingsModule = typeof import("plugin:settings");
 
-const toTaskStates = (states: readonly TaskStateSetting[], icons: IconsModule | undefined): readonly MarkdownTaskState[] =>
-  usableStates(states).map((state, index) => {
-    const style = textStyleOf(state);
-    return {
-      marker: state.marker,
-      label: state.label,
-      icon: icons && state.icon !== undefined ? <icons.Icon name={state.icon} /> : glyphFor(state.marker),
-      order: 15 + index * 5,
-      done: state.done,
-      ...(style !== undefined ? { style } : {}),
-    };
-  });
+const toTaskState = (state: TaskStateSetting, order: number, icons: IconsModule | undefined): MarkdownTaskState => {
+  const style = textStyleOf(state);
+  return {
+    marker: state.marker,
+    label: state.label,
+    icon: icons && state.icon !== undefined ? <icons.Icon name={state.icon} /> : glyphFor(state.marker),
+    order,
+    done: state.done,
+    ...(style !== undefined ? { style } : {}),
+  };
+};
+
+const toTaskStates = (
+  builtins: readonly TaskStateSetting[],
+  states: readonly TaskStateSetting[],
+  icons: IconsModule | undefined,
+): readonly MarkdownTaskState[] => [
+  ...builtins.map((state) => toTaskState(state, builtinOrder(state.marker), icons)),
+  ...usableStates(states).map((state, index) => toTaskState(state, 15 + index * 5, icons)),
+];
 
 let teardown: (() => void)[] = [];
 
@@ -29,7 +47,9 @@ export default function activate(kernel: Kernel): void {
 
   const register = (): void => {
     removeStates();
-    removeStates = addTaskState(toTaskStates(parseStates(kernel.settings.get(STATES_KEY)), icons));
+    removeStates = addTaskState(
+      toTaskStates(parseBuiltins(kernel.settings.get(BUILTINS_KEY)), parseStates(kernel.settings.get(STATES_KEY)), icons),
+    );
   };
   register();
 
@@ -59,7 +79,7 @@ export default function activate(kernel: Kernel): void {
         settings.addSection({
           id: "extra-task-states",
           title: "Task states",
-          description: "The extra task markers, their names and icons.",
+          description: "To do, done and extra task markers: their names, icons and text styles.",
           order: 400,
           component: () => <StatesSettings kernel={kernel} icons={() => icons} />,
         }),

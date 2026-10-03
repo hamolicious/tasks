@@ -29,6 +29,8 @@ const PLAIN = {
 
 export const STATES_KEY = "states";
 
+export const BUILTINS_KEY = "builtins";
+
 export const RESERVED_MARKERS: readonly string[] = [" ", "x", "X"];
 
 export const DEFAULT_STATES: readonly TaskStateSetting[] = [
@@ -37,7 +39,16 @@ export const DEFAULT_STATES: readonly TaskStateSetting[] = [
   { ...PLAIN, marker: "?", label: "Question", icon: "help-square", done: false },
 ];
 
-const FALLBACK_GLYPHS: Readonly<Record<string, string>> = { "/": "◐", "-": "⊘", "?": "?" };
+export const BUILTIN_STATES: readonly TaskStateSetting[] = [
+  { ...PLAIN, marker: " ", label: "To do", icon: "square", done: false },
+  { ...PLAIN, marker: "x", label: "Done", icon: "square-check", done: true },
+];
+
+const BUILTIN_ORDER: Readonly<Record<string, number>> = { " ": -10, x: -5 };
+
+export const builtinOrder = (marker: string): number => BUILTIN_ORDER[marker] ?? 0;
+
+const FALLBACK_GLYPHS: Readonly<Record<string, string>> = { " ": "☐", x: "☑", "/": "◐", "-": "⊘", "?": "?" };
 
 export const newState = (marker: string): TaskStateSetting => ({
   ...PLAIN,
@@ -83,6 +94,24 @@ export function parseStates(value: SettingsValue | undefined): readonly TaskStat
     }
   });
 }
+
+export function parseBuiltins(value: SettingsValue | undefined): readonly TaskStateSetting[] {
+  const stored = Array.isArray(value) ? parseStates(value) : [];
+  return stored.flatMap((state) => {
+    const builtin = BUILTIN_STATES.find((candidate) => candidate.marker === state.marker);
+    if (!builtin || state.label.trim() === "") return [];
+    return [{ ...state, marker: builtin.marker, done: builtin.done }];
+  });
+}
+
+export function effectiveBuiltins(overrides: readonly TaskStateSetting[]): readonly TaskStateSetting[] {
+  return BUILTIN_STATES.map(
+    (builtin) => overrides.find((override) => override.marker === builtin.marker) ?? builtin,
+  );
+}
+
+export const sameState = (a: TaskStateSetting, b: TaskStateSetting): boolean =>
+  JSON.stringify(serializeStates([a])) === JSON.stringify(serializeStates([b]));
 
 export function serializeStates(states: readonly TaskStateSetting[]): string[] {
   return states.map((state) =>

@@ -12,10 +12,17 @@ Without the plugin, these lines show as plain text and are not counted as tasks.
 
 ## Changing the states
 
-Settings → Task states lists every extra state. For each one you pick the marker (one
-character), its name, its icon and whether it counts as done. Delete any you don't want,
-including the three above, or add your own. "Restore the defaults" brings back the three.
-The settings are per user.
+Settings → Task states starts with the built-in **to do** (`- [ ]`) and **done** (`- [x]`).
+You can change their name, icon, colours and text style (bold, italic, underline,
+strikethrough); their markers stay `[ ]` and `[x]`. **Reset** returns one to its built-in
+look.
+
+Below them are the extra states. For each one you pick the marker (one character), its
+name, its icon, its colours and text style, and whether it counts as done. Delete any you
+don't want, including the three above, or add your own. "Restore the defaults" brings back
+the three. The settings are per user.
+
+Restyling to do and done needs ddd's `markdown` plugin 3.2 or newer.
 
 Icons come from the `icons` plugin. Without it, the states show a plain character instead.
 
