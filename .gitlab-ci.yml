@@ -1,4 +1,0 @@
-include:
-  - project: hamolicious-projects/ddd-plugins/base-ci
-    ref: main
-    file: plugin.gitlab-ci.yml
