@@ -233,7 +233,7 @@ export function StatesSettings({ kernel, icons }: SettingsProps): ReactElement {
                 <span style={textStyleOf(state)}>{state.label.trim() === "" ? "A task" : state.label}</span>
               </span>
             </p>
-            {problem !== undefined && <p style={{ margin: 0, color: "var(--ddd-danger-text, var(--ddd-danger))" }}>{problem} This state is not used until it is fixed.</p>}
+            {problem !== undefined && <p style={{ margin: 0, color: "var(--ddd-danger)" }}>{problem} This state is not used until it is fixed.</p>}
             {picking === index && iconSet && (
               <iconSet.Picker
                 {...(state.icon !== undefined ? { value: state.icon } : {})}
