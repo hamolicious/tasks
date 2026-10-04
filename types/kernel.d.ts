@@ -113,11 +113,6 @@ declare module "@kernel" {
   export type FilterJson = {
       readonly [key: string]: unknown;
   };
-  export type SortDirection = "asc" | "desc";
-  export interface SortKey {
-      readonly field: string;
-      readonly direction: SortDirection;
-  }
   export interface DocumentRow {
       readonly id: DocumentId;
       readonly title: string;
@@ -135,69 +130,10 @@ declare module "@kernel" {
       readonly deleted_by: string | null;
       readonly purged: boolean;
   }
-  export interface DocumentQuery {
-      readonly filter?: FilterJson;
-      readonly sort?: readonly SortKey[];
-      readonly search?: string;
-      readonly limit?: number;
-      readonly offset?: number;
-      readonly includeDeleted?: boolean;
-  }
-  export interface DocumentQueryResult {
-      readonly rows: readonly DocumentRow[];
-      readonly total: number;
-  }
-  export interface QuerySubscription {
-      readonly result: DocumentQueryResult;
-      onChange(listener: (result: DocumentQueryResult) => void): Unsubscribe;
-      close(): void;
-  }
-  export interface SearchOptions {
-      readonly limit?: number;
-      readonly prefix?: boolean;
-      readonly fuzzy?: number | boolean;
-      readonly fields?: readonly ("title" | "content" | "fm")[];
-      readonly includeDeleted?: boolean;
-      readonly filter?: FilterJson;
-  }
   export interface SearchHit {
       readonly id: DocumentId;
       readonly score: number;
       readonly terms: readonly string[];
-  }
-  export interface QueryPlan {
-      readonly text?: string;
-      readonly filter?: FilterJson;
-      readonly sort?: readonly string[];
-      readonly trash?: "live" | "trashed" | "all";
-      readonly limit?: number;
-      readonly offset?: number;
-      readonly cursor?: string;
-      readonly snippets?: boolean;
-  }
-  export interface PlanSnippet {
-      readonly text: string;
-      readonly ranges: readonly {
-          readonly start: number;
-          readonly end: number;
-      }[];
-      readonly line: number;
-  }
-  export interface PlanHit {
-      readonly score: number;
-      readonly terms: readonly string[];
-      readonly snippet?: PlanSnippet;
-  }
-  export interface PlanResult {
-      readonly rows: readonly DocumentRow[];
-      readonly total: number;
-      readonly nextCursor?: string;
-      readonly hits: Readonly<Record<DocumentId, PlanHit>>;
-  }
-  export interface PlanSubscription {
-      readonly result: PlanResult;
-      onChange(listener: (result: PlanResult) => void): Unsubscribe;
-      close(): void;
   }
   export type DocumentPhase = "hydrating" | "live" | "error" | "released";
   export interface OpenDocument {
@@ -260,11 +196,6 @@ declare module "@kernel" {
   export interface DocumentsApi {
       get(id: DocumentId): Promise<DocumentRow | undefined>;
       text(id: DocumentId): Promise<string | undefined>;
-      query(query: DocumentQuery): Promise<DocumentQueryResult>;
-      subscribe(query: DocumentQuery): Promise<QuerySubscription>;
-      search(text: string, options?: SearchOptions): Promise<readonly SearchHit[]>;
-      queryPlan(plan: QueryPlan): Promise<PlanResult>;
-      subscribePlan(plan: QueryPlan): Promise<PlanSubscription>;
       open(id: DocumentId): Promise<OpenDocument>;
       create(input: CreateDocumentInput): Promise<DocumentId>;
       delete(id: DocumentId): Promise<void>;
@@ -293,6 +224,14 @@ declare module "@kernel" {
   export class NotImplementedError extends KernelError {
   }
   export function notImplemented(what: string): never;
+  export class SearchPlanError extends KernelError {
+      readonly kind: string;
+      constructor(kind: string, message: string);
+  }
+  export class SearchUnavailableError extends KernelError {
+      readonly cause?: unknown | undefined;
+      constructor(message: string, cause?: unknown | undefined);
+  }
 
   // ---- events.ts -----------------------------------------------
   export const KERNEL_EVENT_PREFIX = "kernel:";
@@ -351,6 +290,7 @@ declare module "@kernel" {
       readonly pluginId: string;
       readonly manifest: PluginManifest;
       readonly documents: DocumentsApi;
+      readonly search: SearchApi;
       readonly plugins: PluginsApi;
       readonly events: EventsApi;
       readonly settings: SettingsApi;
@@ -414,7 +354,7 @@ declare module "@kernel" {
   export function satisfies(version: string, range: string): boolean;
 
   // ---- manifest.generated.ts -----------------------------------
-  export const MANIFEST_KERNEL_VERSION = "3.1.0";
+  export const MANIFEST_KERNEL_VERSION = "4.2.0";
   export interface PluginFrontend {
       readonly module: string;
       readonly style?: string;
@@ -504,6 +444,297 @@ declare module "@kernel" {
   }
   export function createRegistry<T>(options?: RegistryOptions<T>): Registry<T>;
   export function checked<F extends (...args: never[]) => unknown>(shape: Shape<unknown>, impl: F): F;
+
+  // ---- search.ts -----------------------------------------------
+  export type SearchSourceName = "documents" | "fm" | "links" | "tasks" | "attachments";
+  export interface SearchDocumentColumns {
+      readonly id: string;
+      readonly title: string;
+      readonly content: string;
+      readonly fm: CoreMap;
+      readonly plugins: CoreMap;
+      readonly fm_parse_error: boolean;
+      readonly materialized_version: string;
+      readonly created_at: Iso8601;
+      readonly created_by: string | null;
+      readonly updated_at: Iso8601;
+      readonly updated_by: string | null;
+      readonly deleted: boolean;
+      readonly deleted_at: Iso8601 | null;
+      readonly deleted_by: string | null;
+      readonly purged: boolean;
+      readonly words: number;
+      readonly characters: number;
+  }
+  export type SearchDocumentRow = Omit<SearchDocumentColumns, "content" | "words" | "characters">;
+  export interface SearchFmColumns {
+      readonly key: string;
+      readonly value: FmValue;
+      readonly kind: "string" | "number" | "boolean" | "date" | "null";
+      readonly position: number | null;
+  }
+  export interface SearchLinkColumns {
+      readonly target: string;
+      readonly kind: "link" | "embed" | "frontmatter";
+      readonly key: string | null;
+      readonly count: number;
+      readonly state: "live" | "trashed" | "missing";
+  }
+  export interface SearchTaskColumns {
+      readonly line: number;
+      readonly state: "open" | "done" | "other";
+      readonly marker: string;
+      readonly text: string;
+  }
+  export interface SearchAttachmentColumns {
+      readonly attachment: string;
+      readonly line: number;
+  }
+  export interface SearchSourceColumns {
+      readonly documents: SearchDocumentColumns;
+      readonly fm: SearchFmColumns;
+      readonly links: SearchLinkColumns;
+      readonly tasks: SearchTaskColumns;
+      readonly attachments: SearchAttachmentColumns;
+  }
+  type Prefixed<P extends string, T> = {
+      readonly [K in keyof T & string as `${P}${K}`]: T[K];
+  };
+  export type SearchColumnsOf<S extends SearchSourceName> = S extends "documents" ? SearchDocumentColumns : SearchSourceColumns[S] & Prefixed<"doc.", SearchDocumentColumns>;
+  export type SearchDefaultRow<S extends SearchSourceName> = S extends "documents" ? SearchDocumentRow : Omit<SearchSourceColumns[S], never> & {
+      readonly doc: SearchDocumentRow;
+  };
+  type OpenField<S extends SearchSourceName> = S extends "documents" ? `fm.${string}` | `plugins.${string}` : `doc.fm.${string}` | `doc.plugins.${string}`;
+  export type SearchScope = object;
+  export type SearchField<C extends SearchScope, O extends string> = (keyof C & string) | O;
+  export type SearchFieldType<C extends SearchScope, F extends string> = F extends keyof C ? C[F] : FmValue;
+  export type SearchSortKey<C extends SearchScope, O extends string> = SearchField<C, O> | `-${SearchField<C, O>}` | "relevance" | "-relevance";
+  export type SearchCompareOp = "eq" | "ne" | "lt" | "lte" | "gt" | "gte";
+  export type SearchOp = SearchCompareOp | "in" | "contains" | "contains_any" | "any" | "every" | "text_contains" | "text_starts_with" | "text_ends_with" | "missing" | "exists" | "is_null" | "child_of" | "parent_of";
+  export interface SearchDateLiteral {
+      readonly date: string;
+  }
+  export type SearchLiteral = string | number | boolean | null | Date | SearchDateLiteral;
+  type Valueless = "missing" | "exists" | "is_null";
+  export type SearchValue<Op extends SearchOp, T> = Op extends SearchCompareOp ? T | SearchLiteral : Op extends "in" ? readonly SearchLiteral[] | SearchSubquery : Op extends "contains_any" ? readonly SearchLiteral[] : Op extends "any" | "every" ? SearchLiteral | readonly [SearchCompareOp, SearchLiteral] : Op extends "child_of" | "parent_of" | "text_contains" | "text_starts_with" | "text_ends_with" ? string : SearchLiteral;
+  declare const condition: unique symbol;
+  export interface SearchCondition {
+      readonly [condition]: true;
+  }
+  export interface SearchExpression<C extends SearchScope, O extends string> {
+      <F extends SearchField<C, O>, Op extends Valueless>(field: F, op: Op): SearchCondition;
+      <F extends SearchField<C, O>, Op extends Exclude<SearchOp, Valueless | "child_of">>(field: F, op: Op, value: SearchValue<Op, SearchFieldType<C, F>>): SearchCondition;
+      <F extends SearchField<C, O>>(field: F, op: "child_of", value: string, options?: {
+          readonly deep?: boolean;
+      }): SearchCondition;
+      and(...conditions: readonly SearchCondition[]): SearchCondition;
+      or(...conditions: readonly SearchCondition[]): SearchCondition;
+      not(condition: SearchCondition): SearchCondition;
+  }
+  declare const textExpression: unique symbol;
+  export interface SearchTextExpression {
+      readonly [textExpression]: true;
+  }
+  export interface SearchMatch {
+      term(word: string): SearchTextExpression;
+      phrase(words: string): SearchTextExpression;
+      prefix(start: string): SearchTextExpression;
+      and(...expressions: readonly SearchTextExpression[]): SearchTextExpression;
+      or(...expressions: readonly SearchTextExpression[]): SearchTextExpression;
+      not(expression: SearchTextExpression): SearchTextExpression;
+      in(field: "title" | "content" | "fm", expression: SearchTextExpression): SearchTextExpression;
+  }
+  export interface SearchSnippet {
+      readonly text: string;
+      readonly ranges: readonly {
+          readonly start: number;
+          readonly end: number;
+      }[];
+      readonly line: number;
+  }
+  export interface SearchHitInfo {
+      readonly score: number;
+      readonly terms: readonly string[];
+  }
+  export interface SearchResultOptions {
+      readonly total: boolean;
+  }
+  export type SearchResult<Row, Opts extends SearchResultOptions = {
+      readonly total: false;
+  }> = {
+      readonly rows: readonly Row[];
+      readonly nextCursor?: string;
+      readonly hits?: Readonly<Record<string, SearchHitInfo>>;
+  } & (Opts["total"] extends true ? {
+      readonly total: number;
+  } : Opts["total"] extends false ? {
+      readonly total?: undefined;
+  } : {
+      readonly total?: number;
+  });
+  export interface SearchWindow {
+      readonly start: number;
+      readonly count: number;
+  }
+  export interface SearchWatchOptions {
+      readonly window?: SearchWindow;
+  }
+  export interface SearchWatch<Row, Opts extends SearchResultOptions = {
+      readonly total: false;
+  }> {
+      readonly result: Omit<SearchResult<Row, Opts>, "total"> & {
+          readonly total: number;
+          readonly start: number;
+      };
+      onChange(listener: (result: SearchResult<Row, Opts>) => void): () => void;
+      window(start: number, count: number): Promise<void>;
+      close(): void;
+  }
+  export type SearchPlanJson = {
+      readonly source?: SearchSourceName;
+      readonly stages?: readonly unknown[];
+  };
+  export interface SearchSubquery {
+      plan(): SearchPlanJson;
+  }
+  type Simplify<T> = {
+      readonly [K in keyof T]: T[K];
+  } & {};
+  type UnionToIntersection<U> = (U extends unknown ? (value: U) => void : never) extends (value: infer I) => void ? I : never;
+  export type SearchSelectItem<C extends SearchScope, O extends string> = SearchField<C, O> | {
+      readonly [alias: string]: SearchField<C, O>;
+  };
+  type SelectedOne<C extends SearchScope, Item> = Item extends string ? {
+      readonly [K in Item]: SearchFieldType<C, Item>;
+  } : Item extends {
+      readonly [alias: string]: string;
+  } ? {
+      readonly [K in keyof Item]: SearchFieldType<C, Item[K]>;
+  } : never;
+  export type SearchSelected<C extends SearchScope, Items extends readonly unknown[]> = Simplify<UnionToIntersection<SelectedOne<C, Items[number]>>>;
+  type Grouped<C extends SearchScope, Fields extends readonly string[]> = Simplify<{
+      readonly [K in Fields[number]]: SearchFieldType<C, K>;
+  }>;
+  type With<T, K extends string, V> = Simplify<T & {
+      readonly [P in K]: V;
+  }>;
+  export interface SearchAggregateState<C, O extends string, R> {
+      readonly scope: C;
+      readonly open: O;
+      readonly rows: R;
+  }
+  type AggScope<G, C extends SearchScope> = [G] extends [never] ? C : G extends SearchAggregateState<infer Scope extends SearchScope, string, unknown> ? Scope : never;
+  type AggOpen<G, O extends string> = [G] extends [never] ? O : G extends SearchAggregateState<object, infer Open, unknown> ? Open : never;
+  type AggRows<G> = [G] extends [never] ? {} : G extends SearchAggregateState<object, string, infer Rows> ? Rows : never;
+  type AfterAggregate<S extends SearchSourceName, C extends SearchScope, O extends string, G, A extends string, V, Opts extends SearchResultOptions> = SearchBuilder<S, With<AggRows<G>, A, V>, With<AggRows<G>, A, V>, never, SearchAggregateState<AggScope<G, C>, AggOpen<G, O>, With<AggRows<G>, A, V>>, Opts>;
+  export interface SearchFuzzyOptions {
+      readonly fields?: readonly ("title" | "content" | "fm")[];
+      readonly limit?: number;
+      readonly maxDistance?: number;
+  }
+  export interface SearchBuilder<S extends SearchSourceName, C extends SearchScope, Row, O extends string, G, Opts extends SearchResultOptions> {
+      text(query: string): SearchBuilder<S, With<C, "relevance", number>, Row, O, never, Opts>;
+      match(build: (m: SearchMatch) => SearchTextExpression): SearchBuilder<S, With<C, "relevance", number>, Row, O, never, Opts>;
+      where<F extends SearchField<C, O>, Op extends Valueless>(field: F, op: Op): SearchBuilder<S, C, Row, O, never, Opts>;
+      where<F extends SearchField<C, O>, Op extends Exclude<SearchOp, Valueless | "child_of">>(field: F, op: Op, value: SearchValue<Op, SearchFieldType<C, F>>): SearchBuilder<S, C, Row, O, never, Opts>;
+      where<F extends SearchField<C, O>>(field: F, op: "child_of", value: string, options?: {
+          readonly deep?: boolean;
+      }): SearchBuilder<S, C, Row, O, never, Opts>;
+      where(build: (w: SearchExpression<C, O>) => SearchCondition): SearchBuilder<S, C, Row, O, never, Opts>;
+      sort(...keys: readonly SearchSortKey<C, O>[]): SearchBuilder<S, C, Row, O, never, Opts>;
+      select<const Items extends readonly SearchSelectItem<C, O>[]>(...items: Items): SearchBuilder<S, SearchSelected<C, Items>, SearchSelected<C, Items>, never, never, Opts>;
+      distinct(): SearchBuilder<S, C, Row, O, never, Opts>;
+      distinct<const Fields extends readonly SearchField<C, O>[]>(...fields: Fields): SearchBuilder<S, Grouped<C, Fields>, Grouped<C, Fields>, never, never, Opts>;
+      groupBy<const Fields extends readonly SearchField<C, O>[]>(...fields: Fields): SearchGroupStart<S, C, O, Grouped<C, Fields>, Opts>;
+      count<const A extends string = "count">(as?: A): AfterAggregate<S, C, O, G, A, number, Opts>;
+      sum<F extends SearchField<AggScope<G, C>, AggOpen<G, O>>, const A extends string = "sum">(field: F, as?: A): AfterAggregate<S, C, O, G, A, number | null, Opts>;
+      avg<F extends SearchField<AggScope<G, C>, AggOpen<G, O>>, const A extends string = "avg">(field: F, as?: A): AfterAggregate<S, C, O, G, A, number | null, Opts>;
+      min<F extends SearchField<AggScope<G, C>, AggOpen<G, O>>, const A extends string = "min">(field: F, as?: A): AfterAggregate<S, C, O, G, A, SearchFieldType<AggScope<G, C>, F> | null, Opts>;
+      max<F extends SearchField<AggScope<G, C>, AggOpen<G, O>>, const A extends string = "max">(field: F, as?: A): AfterAggregate<S, C, O, G, A, SearchFieldType<AggScope<G, C>, F> | null, Opts>;
+      collect<F extends SearchField<AggScope<G, C>, AggOpen<G, O>>, const A extends string = "collect">(field: F, as?: A): AfterAggregate<S, C, O, G, A, SearchFieldType<AggScope<G, C>, F>[], Opts>;
+      limit(n: number): SearchBuilder<S, C, Row, O, never, Opts>;
+      offset(n: number): SearchBuilder<S, C, Row, O, never, Opts>;
+      cursor(cursor: string): SearchBuilder<S, C, Row, O, never, Opts>;
+      withTotal(): SearchBuilder<S, C, Row, O, never, {
+          readonly total: true;
+      }>;
+      withContent(): SearchBuilder<S, C, S extends "documents" ? With<Row, "content", string> : Row, O, never, Opts>;
+      snippets(): SearchBuilder<S, C, With<Row, "snippet", SearchSnippet | null>, O, never, Opts>;
+      trash(scope: "live" | "trashed" | "all"): SearchBuilder<S, C, Row, O, G, Opts>;
+      fuzzy(query: string, options?: SearchFuzzyOptions): SearchBuilder<S, With<C, "score", number>, Row, O, never, Opts>;
+      run(): Promise<SearchResult<Row, Opts>>;
+      watch(options?: SearchWatchOptions): Promise<SearchWatch<Row, Opts>>;
+      plan(): SearchPlanJson;
+  }
+  export type SearchGroupStart<S extends SearchSourceName, C extends SearchScope, O extends string, G, Opts extends SearchResultOptions> = Pick<SearchBuilder<S, C, G, O, SearchAggregateState<C, O, G>, Opts>, "count" | "sum" | "avg" | "min" | "max" | "collect">;
+  export type SearchFrom<S extends SearchSourceName> = SearchBuilder<S, SearchColumnsOf<S>, SearchDefaultRow<S>, OpenField<S>, never, {
+      readonly total: false;
+  }>;
+  export type AnySearchRow = Readonly<Record<string, unknown>>;
+  export interface AnySearchBuilder {
+      text(query: string): AnySearchBuilder;
+      match(build: (m: SearchMatch) => SearchTextExpression): AnySearchBuilder;
+      where(field: string, op: SearchOp, value?: unknown, options?: {
+          readonly deep?: boolean;
+      }): AnySearchBuilder;
+      where(build: (w: SearchExpression<object, string>) => SearchCondition): AnySearchBuilder;
+      sort(...keys: readonly string[]): AnySearchBuilder;
+      select(...items: readonly (string | {
+          readonly [alias: string]: string;
+      })[]): AnySearchBuilder;
+      distinct(...fields: readonly string[]): AnySearchBuilder;
+      groupBy(...fields: readonly string[]): AnySearchBuilder;
+      count(as?: string): AnySearchBuilder;
+      sum(field: string, as?: string): AnySearchBuilder;
+      avg(field: string, as?: string): AnySearchBuilder;
+      min(field: string, as?: string): AnySearchBuilder;
+      max(field: string, as?: string): AnySearchBuilder;
+      collect(field: string, as?: string): AnySearchBuilder;
+      limit(n: number): AnySearchBuilder;
+      offset(n: number): AnySearchBuilder;
+      cursor(cursor: string): AnySearchBuilder;
+      withTotal(): AnySearchBuilder;
+      withContent(): AnySearchBuilder;
+      snippets(): AnySearchBuilder;
+      trash(scope: "live" | "trashed" | "all"): AnySearchBuilder;
+      fuzzy(query: string, options?: SearchFuzzyOptions): AnySearchBuilder;
+      run(): Promise<SearchResult<AnySearchRow, SearchResultOptions>>;
+      watch(options?: SearchWatchOptions): Promise<SearchWatch<AnySearchRow, SearchResultOptions>>;
+      plan(): SearchPlanJson;
+  }
+  export interface SearchExecutor {
+      run(plan: SearchPlanJson): Promise<SearchResult<unknown, SearchResultOptions>>;
+      watch(plan: SearchPlanJson, options?: SearchWatchOptions): Promise<SearchWatch<unknown, SearchResultOptions>>;
+  }
+  export type SearchValueKind = "text" | "reference" | "number" | "boolean" | "date" | "null";
+  export interface SearchFieldInfo {
+      readonly field: string;
+      readonly kinds: readonly SearchValueKind[];
+      readonly list: boolean;
+      readonly builtIn: boolean;
+      readonly documents?: number;
+  }
+  export interface SearchFieldsOptions {
+      readonly includeMachine?: boolean;
+  }
+  export interface SearchFieldsWatch {
+      readonly fields: readonly SearchFieldInfo[];
+      onChange(listener: (fields: readonly SearchFieldInfo[]) => void): () => void;
+      close(): void;
+  }
+  export interface SearchApi {
+      from(): SearchFrom<"documents">;
+      from<S extends SearchSourceName>(source: S): SearchFrom<S>;
+      fromPlan(plan: SearchPlanJson): AnySearchBuilder;
+      fromAny(source?: SearchSourceName): AnySearchBuilder;
+      fields(options?: SearchFieldsOptions): Promise<readonly SearchFieldInfo[]>;
+      watchFields(options?: SearchFieldsOptions): Promise<SearchFieldsWatch>;
+  }
+  export const SEARCH_BUILT_IN_FIELDS: readonly SearchFieldInfo[];
+  type FieldRow = Readonly<Record<string, unknown>>;
+  export function searchFieldsOf(kinds: readonly FieldRow[], counts: readonly FieldRow[], references?: readonly FieldRow[], texts?: readonly FieldRow[]): readonly SearchFieldInfo[];
+  export function createSearchApi(executor: SearchExecutor): SearchApi;
+  export {};
 
   // ---- session.ts ----------------------------------------------
   export interface SessionUser {
