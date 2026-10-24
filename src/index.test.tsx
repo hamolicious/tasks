@@ -4,7 +4,7 @@ import manifest from "../manifest.json";
 import activate, { deactivate } from "./index.js";
 
 test("manifest targets the kernel with the slots it fills", () => {
-  expect(manifest.kernel).toBe("^4.19");
+  expect(manifest.kernel).toBe("*");
   expect(manifest.uses).toEqual(["markdown.task-state", "kernel.settings.section"]);
 });
 
