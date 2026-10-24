@@ -4,12 +4,13 @@
  * Generated from web/kernel-api/src by web/scripts/build-kernel-dts.mjs.
  * Do not edit: edit the source and re-run `npm run kernel:dts`.
  *
- * Contract version: 4.18.0
+ * Contract version: 4.19.0
  * Served by the server at /kernel.d.ts (SPEC §6.4).
  */
 
 declare module "@kernel" {
   import type * as Y from "yjs";
+  import type { ComponentType } from "react";
   import type { ComponentType, ReactNode } from "react";
   import { type ComponentType, type ReactNode } from "react";
 
@@ -245,6 +246,10 @@ declare module "@kernel" {
           readonly "order"?: number;
           readonly "parent"?: string;
       };
+      readonly "context-menu.content": {
+          readonly "id": string;
+          readonly "component": ((...args: never[]) => unknown);
+      };
       readonly "document-surface.mode": {
           readonly "id": string;
           readonly "label": string;
@@ -444,6 +449,78 @@ declare module "@kernel" {
           readonly "kind": "plugins" | "bundle" | "shell";
           readonly "version"?: string | number;
       };
+      readonly "attachments.upload": {
+          readonly "blob": Readonly<Record<string, unknown>>;
+          readonly "name": string;
+          readonly "note"?: string;
+          readonly "uploadId"?: string;
+          readonly "wrapper"?: boolean;
+      };
+      readonly "attachments.progress": {
+          readonly "note"?: string;
+          readonly "name": string;
+          readonly "sent": number;
+          readonly "size": number;
+      };
+      readonly "context-menu.confirm": {
+          readonly "title": string;
+          readonly "message"?: string;
+          readonly "confirmLabel"?: string;
+          readonly "cancelLabel"?: string;
+          readonly "danger"?: boolean;
+          readonly "typeToConfirm"?: string;
+      };
+      readonly "context-menu.modal": {
+          readonly "title": string;
+          readonly "message"?: string;
+          readonly "fields"?: readonly ({
+              readonly "kind": "text" | "textarea" | "checkbox" | "select";
+              readonly "id": string;
+              readonly "label": string;
+              readonly "hint"?: string;
+              readonly "value"?: unknown;
+              readonly "placeholder"?: string;
+              readonly "required"?: boolean;
+              readonly "type"?: "text" | "email" | "password" | "url" | "number" | "date";
+              readonly "options"?: readonly ({
+                  readonly "value": string;
+                  readonly "label": string;
+              })[];
+          })[];
+          readonly "buttons"?: readonly ({
+              readonly "id": string;
+              readonly "label": string;
+              readonly "tone"?: "plain" | "primary" | "danger";
+              readonly "dismiss"?: boolean;
+              readonly "default"?: boolean;
+              readonly "autoFocus"?: boolean;
+          })[];
+      };
+      readonly "context-menu.open": {
+          readonly "title": string;
+          readonly "description"?: string;
+          readonly "x": number;
+          readonly "y": number;
+          readonly "sections": readonly ({
+              readonly "title"?: string;
+              readonly "items": readonly ({
+                  readonly "id": string;
+                  readonly "label": string;
+                  readonly "hint"?: string;
+                  readonly "danger"?: boolean;
+                  readonly "disabled"?: boolean;
+                  readonly "checked"?: boolean;
+                  readonly "group"?: string;
+              })[];
+          })[];
+      };
+      readonly "context-menu.dialog": {
+          readonly "title": string;
+          readonly "content": string;
+          readonly "description"?: string;
+          readonly "size"?: "normal" | "large";
+          readonly "data"?: Readonly<Record<string, unknown>>;
+      };
       readonly "doc-events.created": {
           readonly "id": string;
           readonly "parent"?: string;
@@ -452,15 +529,52 @@ declare module "@kernel" {
           readonly "id": string;
           readonly "parent"?: string;
       };
+      readonly "document-surface.current": Readonly<Record<string, unknown>>;
+      readonly "document-surface.changed": {
+          readonly "id": string | null;
+          readonly "mode": string | null;
+      };
       readonly "folders.changed": Readonly<Record<string, unknown>>;
       readonly "indexer.changed": Readonly<Record<string, unknown>>;
       readonly "markdown.changed": Readonly<Record<string, unknown>>;
+      readonly "markdown.body-of": {
+          readonly "text": string;
+      };
       readonly "router.changed": {
           readonly "path": string;
       };
+      readonly "router.navigate": {
+          readonly "path": string;
+          readonly "replace"?: boolean;
+      };
+      readonly "settings.open": {
+          readonly "plugin": string;
+          readonly "section"?: string;
+      };
   }
   export interface GeneratedSignalResponses {
+      readonly "attachments.upload": {
+          readonly "id": string;
+          readonly "name": string;
+          readonly "mime": string;
+          readonly "size": number;
+          readonly "sha256"?: string;
+          readonly "revision"?: number;
+          readonly "reference": string;
+          readonly "document_id"?: string;
+      };
+      readonly "context-menu.confirm": boolean;
+      readonly "context-menu.modal": Readonly<Record<string, unknown>> | null;
+      readonly "context-menu.open": string | null;
+      readonly "context-menu.dialog": null;
       readonly "doc-events.announce": Readonly<Record<string, unknown>>;
+      readonly "document-surface.current": {
+          readonly "id": string | null;
+          readonly "mode": string | null;
+      };
+      readonly "markdown.body-of": string;
+      readonly "router.navigate": null;
+      readonly "settings.open": null;
   }
 
   // ---- decorations.ts ------------------------------------------
@@ -759,6 +873,8 @@ declare module "@kernel" {
       fill<S extends string>(slot: S, entry: SlotEntryOf<S>): Unsubscribe;
       slot<S extends string>(name: S): SlotList<SlotEntryOf<S>>;
       decorate(query: string, wrapper: Wrapper): void;
+      provide<P extends object>(name: string, component: ComponentType<P>): Unsubscribe;
+      component<P extends object = Record<string, unknown>>(name: string): ComponentType<P>;
       emit<S extends string>(name: S, payload: SignalPayloadOf<S>, options?: EmitOptions): void;
       on<S extends string>(name: S, listener: (payload: SignalPayloadOf<S>, meta: SignalMeta) => void): Unsubscribe;
       handle<S extends string>(name: S, handler: (payload: SignalPayloadOf<S>) => SignalResponseOf<S> | Promise<SignalResponseOf<S>>): Unsubscribe;
@@ -827,7 +943,7 @@ declare module "@kernel" {
   export function satisfies(version: string, range: string): boolean;
 
   // ---- manifest.generated.ts -----------------------------------
-  export const MANIFEST_KERNEL_VERSION = "4.18.0";
+  export const MANIFEST_KERNEL_VERSION = "4.19.0";
   export interface PluginFrontend {
       readonly module: string;
       readonly style?: string;

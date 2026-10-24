@@ -1,12 +1,9 @@
 {
   "id": "extra-task-states",
-  "version": "1.7.0",
-  "kernel": "^4.18",
+  "version": "1.8.0",
+  "kernel": "^4.19",
   "dependencies": {
     "markdown": "^3.10"
-  },
-  "optionalDependencies": {
-    "icons": "^2.0"
   },
   "peerLibraries": {
     "react": "^18.0.0"
