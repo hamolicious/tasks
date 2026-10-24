@@ -4,7 +4,7 @@ import manifest from "../manifest.json";
 import activate, { deactivate } from "./index.js";
 
 test("manifest targets the kernel with the slots it fills", () => {
-  expect(manifest.kernel).toBe("^4.18");
+  expect(manifest.kernel).toBe("^4.19");
   expect(manifest.uses).toEqual(["markdown.task-state", "kernel.settings.section"]);
 });
 
@@ -13,7 +13,7 @@ test("fills markdown.task-state per marker and the settings section, and removes
   let listener = (): void => {};
   const kernel: any = {
     settings: { get: () => undefined, subscribe: (fn: () => void) => ((listener = fn), () => {}) },
-    plugins: { optional: () => Promise.resolve(undefined) },
+    component: (name: string) => Object.assign(() => null, { displayName: name }),
     fill: (slot: string, entry: unknown) => {
       const off = vi.fn();
       fills.push({ slot, entry, off });
@@ -27,5 +27,22 @@ test("fills markdown.task-state per marker and the settings section, and removes
   expect(fills.some((f) => f.slot === "kernel.settings.section")).toBe(true);
   listener();
   expect(fills.filter((f) => f.slot === "markdown.task-state").slice(0, 3).every((f) => f.off.mock.calls.length === 1)).toBe(true);
+  deactivate();
+});
+
+test("a state with an icon shows the Icon component the kernel hands out", () => {
+  const fills: { slot: string; entry: any }[] = [];
+  const kernel: any = {
+    settings: {
+      get: (key: string) => (key.includes("builtin") ? undefined : [JSON.stringify({ marker: "!", label: "Hot", icon: "flame", done: false })]),
+      subscribe: () => () => {},
+    },
+    component: (name: string) => Object.assign(() => null, { displayName: name }),
+    fill: (slot: string, entry: unknown) => (fills.push({ slot, entry }), () => {}),
+  };
+  activate(kernel);
+  const hot = fills.map((f) => f.entry).find((e) => e.marker === "!");
+  expect(hot?.icon.type.displayName).toBe("Icon");
+  expect(hot?.icon.props).toEqual({ name: "flame" });
   deactivate();
 });

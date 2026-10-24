@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactElement } from "react";
+import { useEffect, useRef, useState, type ComponentType, type CSSProperties, type ReactElement } from "react";
 
 import type { SettingsValue } from "@kernel";
 
 import type { Kernel } from "@kernel";
-import type { Icons } from "plugin:icons";
 
 import {
   BUILTIN_STATES,
@@ -26,7 +25,6 @@ import {
 
 export interface SettingsProps {
   readonly kernel: Kernel;
-  readonly icons: () => Pick<Icons, "Icon" | "Picker"> | undefined;
 }
 
 const button: CSSProperties = {
@@ -87,7 +85,19 @@ function ColorField({ label, value, fallback, onChange }: ColorFieldProps): Reac
   );
 }
 
-type IconSet = Pick<Icons, "Icon" | "Picker">;
+interface IconProps {
+  readonly name: string;
+}
+
+interface IconPickerProps {
+  readonly value?: string;
+  readonly onChange: (name: string | undefined) => void;
+}
+
+interface IconSet {
+  readonly Icon: ComponentType<IconProps>;
+  readonly Picker: ComponentType<IconPickerProps>;
+}
 
 function useStoredStates(
   kernel: Kernel,
@@ -150,7 +160,7 @@ interface StateEditorProps {
   readonly state: TaskStateSetting;
   readonly builtin: boolean;
   readonly problem: string | undefined;
-  readonly iconSet: IconSet | undefined;
+  readonly iconSet: IconSet;
   readonly picking: boolean;
   readonly onPick: () => void;
   readonly onChange: (patch: Partial<TaskStateSetting>) => void;
@@ -177,12 +187,11 @@ function StateEditor({ state, builtin, problem, iconSet, picking, onPick, onChan
           type="button"
           style={iconButton}
           aria-label={`Icon for ${state.label}`}
-          title={iconSet ? "Choose an icon" : "Install the icons plugin to choose an icon"}
-          disabled={!iconSet}
+          title="Choose an icon"
           aria-expanded={picking}
           onClick={onPick}
         >
-          {iconSet && state.icon !== undefined ? <iconSet.Icon name={state.icon} /> : glyphFor(state.marker)}
+          {state.icon !== undefined ? <iconSet.Icon name={state.icon} /> : glyphFor(state.marker)}
         </button>
         {builtin ? (
           <span style={{ ...row, color: "var(--ddd-text-muted)" }} title="The built-in markers cannot change">
@@ -225,7 +234,7 @@ function StateEditor({ state, builtin, problem, iconSet, picking, onPick, onChan
             title="Delete"
             onClick={onRemove}
           >
-            {iconSet ? <iconSet.Icon name="trash" /> : "✕"}
+            <iconSet.Icon name="trash" />
           </button>
         )}
       </div>
@@ -260,18 +269,18 @@ function StateEditor({ state, builtin, problem, iconSet, picking, onPick, onChan
         </span>
       </p>
       {problem !== undefined && <p style={{ margin: 0, color: "var(--ddd-danger)" }}>{problem} This state is not used until it is fixed.</p>}
-      {picking && iconSet && (
+      {picking && (
         <iconSet.Picker {...(state.icon !== undefined ? { value: state.icon } : {})} onChange={(icon) => onChange({ icon })} />
       )}
     </fieldset>
   );
 }
 
-export function StatesSettings({ kernel, icons }: SettingsProps): ReactElement {
+export function StatesSettings({ kernel }: SettingsProps): ReactElement {
   const [overrides, saveOverrides] = useStoredStates(kernel, BUILTINS_KEY, parseBuiltins);
   const [states, save] = useStoredStates(kernel, STATES_KEY, parseStates);
   const [picking, setPicking] = useState<string | undefined>(undefined);
-  const iconSet = icons();
+  const iconSet: IconSet = { Icon: kernel.component<IconProps>("Icon"), Picker: kernel.component<IconPickerProps>("IconPicker") };
   const pick = (id: string): void => setPicking(picking === id ? undefined : id);
 
   const changeBuiltin = (marker: string, patch: Partial<TaskStateSetting>): void => {

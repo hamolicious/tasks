@@ -24,7 +24,7 @@ the three. The settings are per user.
 
 Restyling to do and done needs ddd's `markdown` plugin 3.2 or newer.
 
-Icons come from the `icons` plugin. Without it, the states show a plain character instead.
+Icons come from the `icons` plugin; a state without one shows a plain character.
 
 ## Installing
 
