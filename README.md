@@ -46,7 +46,7 @@ npm run types -- --server https://your-server   # refresh types/ after the serve
 - `manifest.json`: id, version and dependencies.
 - `src/index.tsx`: the plugin.
 - `src/Settings.tsx`: the Task states settings section.
-- `types/`: `@kernel`, `plugin:markdown`, `plugin:icons` and `plugin:settings`, as the server serves them.
+- `types/`: `@kernel` and `plugin:icons`, as the server serves them.
 - `tools/`: the reference build from the ddd repository. Do not edit.
 
 ## Releasing

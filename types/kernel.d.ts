@@ -4,21 +4,66 @@
  * Generated from web/kernel-api/src by web/scripts/build-kernel-dts.mjs.
  * Do not edit: edit the source and re-run `npm run kernel:dts`.
  *
- * Contract version: unknown
+ * Contract version: 4.18.0
  * Served by the server at /kernel.d.ts (SPEC §6.4).
  */
 
 declare module "@kernel" {
   import type * as Y from "yjs";
   import type { ComponentType, ReactNode } from "react";
+  import { type ComponentType, type ReactNode } from "react";
 
   // ---- index.ts ------------------------------------------------
   export const KERNEL_API_VERSION: string;
   export const KERNEL_API_MAJOR: number;
 
+  // ---- actions.ts ----------------------------------------------
+  export interface ActionDefinition {
+      readonly id: string;
+      readonly title: string;
+      readonly icon?: string;
+      readonly run: (context?: unknown) => void | Promise<void>;
+      readonly when?: string;
+      readonly enabled?: (context: WhenContext) => boolean;
+  }
+  export interface ActionInfo {
+      readonly id: string;
+      readonly title: string;
+      readonly icon?: string;
+      readonly when?: string;
+      readonly pluginId: string;
+  }
+  export interface WhenContext {
+      readonly states?: Iterable<string>;
+      readonly element?: Element | null;
+  }
+  export interface KeybindingInfo {
+      readonly keys: string;
+      readonly action: string;
+      readonly pluginId: string;
+  }
+  export interface ActionsApi {
+      get(id: string): ActionInfo | undefined;
+      list(): readonly ActionInfo[];
+      keybindings(): readonly KeybindingInfo[];
+      visible(id: string, context?: WhenContext): boolean;
+      matches(query: string, context?: WhenContext): boolean;
+      run(id: string, context?: unknown): Promise<void>;
+      subscribe(listener: () => void): Unsubscribe;
+  }
+  export type WhenMatcher = (query: string) => ((context: WhenContext) => boolean) | undefined;
+  export const componentName: (type: string) => string;
+  export interface ActionWriter {
+      action(pluginId: string, definition: ActionDefinition): Unsubscribe;
+      keybinding(pluginId: string, keys: string, actionId: string): Unsubscribe;
+  }
+  export function installActionWriter(writer: ActionWriter): void;
+  export function actionForActivating(definition: ActionDefinition): Unsubscribe;
+  export function keybindingForActivating(keys: string, actionId: string): Unsubscribe;
+
   // ---- capabilities.ts -----------------------------------------
   export const SUPPORTED_BRIDGE_VERSION = 1;
-  export type CapabilityName = "filesystem" | "notifications" | "folder";
+  export type CapabilityName = "filesystem" | "notifications" | "folder" | "clipboard";
   export type CapabilitySupport = "native" | "fallback" | "unavailable";
   export interface FileExport {
       readonly name: string;
@@ -93,6 +138,10 @@ declare module "@kernel" {
       remove(path: string): Promise<void>;
       onChange(listener: (paths: readonly string[]) => void): () => void;
   }
+  export interface ClipboardCapability {
+      readonly support: CapabilitySupport;
+      readImage(): Promise<File | null>;
+  }
   export interface CapabilitiesApi {
       has(name: CapabilityName): boolean;
       support(name: CapabilityName): CapabilitySupport;
@@ -100,6 +149,7 @@ declare module "@kernel" {
       readonly filesystem: FilesystemCapability;
       readonly notifications: NotificationsCapability;
       readonly folder: FolderCapability;
+      readonly clipboard: ClipboardCapability;
       storage(): Promise<StorageReport>;
   }
   export interface StorageReport {
@@ -107,6 +157,376 @@ declare module "@kernel" {
       readonly usageBytes?: number;
       readonly quotaBytes?: number;
   }
+
+  // ---- contracts.generated.ts ----------------------------------
+  export const KERNEL_CONTRACTS: {
+      readonly slots: Readonly<Record<string, {
+          readonly entry: JsonSchema;
+      }>>;
+      readonly signals: Readonly<Record<string, {
+          readonly schema: JsonSchema;
+          readonly response?: JsonSchema;
+      }>>;
+  };
+  export interface GeneratedSlotEntries {
+      readonly "kernel.root": {
+          readonly "id": string;
+          readonly "component": ((...args: never[]) => unknown);
+      };
+      readonly "kernel.route": {
+          readonly "id": string;
+          readonly "path": string;
+          readonly "component": ((...args: never[]) => unknown);
+          readonly "title"?: string;
+      };
+      readonly "kernel.settings.section": {
+          readonly "id": string;
+          readonly "title": string;
+          readonly "description"?: string;
+          readonly "order"?: number;
+          readonly "component": ((...args: never[]) => unknown);
+      };
+      readonly "admin.package-provider": {
+          readonly "id": string;
+          readonly "title": string;
+          readonly "setup": ((...args: never[]) => unknown) | Readonly<Record<string, unknown>>;
+          readonly "browse": ((...args: never[]) => unknown);
+          readonly "download": ((...args: never[]) => unknown);
+          readonly "checkUpdates"?: ((...args: never[]) => unknown);
+          readonly "defaults"?: ((...args: never[]) => unknown);
+          readonly "validate"?: ((...args: never[]) => unknown);
+          readonly "fromLink"?: ((...args: never[]) => unknown);
+          readonly "test"?: ((...args: never[]) => unknown);
+          readonly "description"?: string;
+          readonly "order"?: number;
+      };
+      readonly "attachments.viewer": {
+          readonly "id": string;
+          readonly "label": string;
+          readonly "extensions": readonly (string)[];
+          readonly "component": ((...args: never[]) => unknown) | Readonly<Record<string, unknown>>;
+          readonly "order"?: number;
+      };
+      readonly "commands.documents": {
+          readonly "id"?: string;
+          readonly "action": string;
+      } & {
+          readonly id?: string;
+      };
+      readonly "commands.palette": {
+          readonly "id"?: string;
+          readonly "action": string;
+          readonly "order"?: number;
+          readonly "category"?: string;
+      } & {
+          readonly id?: string;
+      };
+      readonly "context-menu.item": ({
+          readonly "id"?: string;
+          readonly "action": string;
+          readonly "order"?: number;
+          readonly "danger"?: boolean;
+          readonly "hint"?: string | ((...args: never[]) => unknown);
+          readonly "group"?: string;
+          readonly "when"?: string;
+          readonly "label"?: string;
+      }) | (({
+          readonly "id": string;
+          readonly "when": string;
+          readonly "order"?: number;
+          readonly "items": ((...args: never[]) => unknown);
+      }) & {
+          readonly id?: string;
+      });
+      readonly "context-menu.group": {
+          readonly "id": string;
+          readonly "label": string;
+          readonly "icon"?: unknown;
+          readonly "order"?: number;
+          readonly "parent"?: string;
+      };
+      readonly "document-surface.mode": {
+          readonly "id": string;
+          readonly "label": string;
+          readonly "component": ((...args: never[]) => unknown) | Readonly<Record<string, unknown>>;
+          readonly "icon"?: unknown;
+          readonly "order"?: number;
+          readonly "when"?: ((...args: never[]) => unknown);
+          readonly "prefer"?: ((...args: never[]) => unknown);
+          readonly "forNew"?: boolean;
+      };
+      readonly "editor.extension": {
+          readonly "id": string;
+          readonly "extension": unknown;
+          readonly "order"?: number;
+      };
+      readonly "editor.paste": {
+          readonly "id": string;
+          readonly "paste": ((...args: never[]) => unknown);
+          readonly "order"?: number;
+      };
+      readonly "editor.surface": {
+          readonly "id": string;
+          readonly "documentId": string;
+          readonly "element": unknown;
+          readonly "hasFocus": ((...args: never[]) => unknown);
+          readonly "focus": ((...args: never[]) => unknown);
+          readonly "textBeforeCaret": ((...args: never[]) => unknown);
+          readonly "caretRect": ((...args: never[]) => unknown);
+          readonly "takeBeforeCaret": ((...args: never[]) => unknown);
+          readonly "subscribe": ((...args: never[]) => unknown);
+          readonly "documentBeforeCaret"?: ((...args: never[]) => unknown);
+          readonly "replaceBeforeCaret"?: ((...args: never[]) => unknown);
+      };
+      readonly "markdown.directive": {
+          readonly "id": string;
+          readonly "name": string;
+          readonly "kind": "container" | "leaf" | "text";
+          readonly "component": ((...args: never[]) => unknown) | Readonly<Record<string, unknown>>;
+      };
+      readonly "markdown.fence": {
+          readonly "id": string;
+          readonly "language"?: string;
+          readonly "component": ((...args: never[]) => unknown) | Readonly<Record<string, unknown>>;
+          readonly "order"?: number;
+      };
+      readonly "markdown.component": {
+          readonly "id": string;
+          readonly "node": string;
+          readonly "component": ((...args: never[]) => unknown) | Readonly<Record<string, unknown>>;
+          readonly "order"?: number;
+      };
+      readonly "markdown.remark": {
+          readonly "id": string;
+          readonly "plugin": unknown;
+          readonly "options"?: unknown;
+          readonly "order"?: number;
+      };
+      readonly "markdown.attachment": {
+          readonly "id": string;
+          readonly "component": ((...args: never[]) => unknown) | Readonly<Record<string, unknown>>;
+          readonly "order"?: number;
+      };
+      readonly "markdown.task-state": {
+          readonly "id": string;
+          readonly "marker": string;
+          readonly "label": string;
+          readonly "icon": unknown;
+          readonly "order"?: number;
+          readonly "done"?: boolean;
+          readonly "style"?: unknown;
+      };
+      readonly "search.provider": {
+          readonly "id": string;
+          readonly "label": string;
+          readonly "order"?: number;
+          readonly "search": ((...args: never[]) => unknown);
+      };
+      readonly "shell-ui.view": {
+          readonly "id": string;
+          readonly "component": ((...args: never[]) => unknown);
+          readonly "title"?: string;
+      };
+      readonly "shell-ui.overlay": {
+          readonly "id": string;
+          readonly "component": ((...args: never[]) => unknown);
+      };
+      readonly "shell-ui.sidebar": {
+          readonly "id": string;
+          readonly "title": string;
+          readonly "component": ((...args: never[]) => unknown);
+          readonly "icon"?: unknown;
+          readonly "order"?: number;
+          readonly "defaultOpen"?: boolean;
+          readonly "target"?: {
+              readonly "type": string;
+              readonly "id"?: string;
+          };
+      };
+      readonly "shell-ui.altbar": {
+          readonly "id": string;
+          readonly "title": string;
+          readonly "component": ((...args: never[]) => unknown);
+          readonly "icon"?: unknown;
+          readonly "order"?: number;
+          readonly "defaultOpen"?: boolean;
+          readonly "when"?: ((...args: never[]) => unknown);
+      };
+      readonly "shell-ui.header": {
+          readonly "id": string;
+          readonly "component": ((...args: never[]) => unknown);
+      };
+      readonly "shell-ui.footer": {
+          readonly "id": string;
+          readonly "component": ((...args: never[]) => unknown);
+      };
+      readonly "slash-commands.item": {
+          readonly "id"?: string;
+          readonly "action": string;
+          readonly "order"?: number;
+          readonly "description"?: string;
+          readonly "keywords"?: readonly (string)[];
+      } & {
+          readonly id?: string;
+      };
+      readonly "syntax-highlight.language": {
+          readonly "id": string;
+          readonly "name": string;
+          readonly "aliases"?: readonly (string)[];
+          readonly "wasmUrl": string;
+          readonly "highlightsUrl": string;
+          readonly "size"?: number;
+      };
+      readonly "themes.theme": {
+          readonly "id": string;
+          readonly "name": string;
+          readonly "scheme": "light" | "dark";
+          readonly "tokens": {
+              readonly [field: string]: string;
+          };
+      };
+      readonly "toolbar.item": ({
+          readonly "id"?: string;
+          readonly "label"?: string;
+          readonly "order"?: number;
+          readonly "bar"?: "top" | "bottom";
+          readonly "side"?: "start" | "end";
+          readonly "mobile"?: {
+              readonly "bar"?: "top" | "bottom";
+              readonly "side"?: "start" | "end";
+          };
+          readonly "action": string;
+      }) | (({
+          readonly "id": string;
+          readonly "label": string;
+          readonly "order"?: number;
+          readonly "bar"?: "top" | "bottom";
+          readonly "side"?: "start" | "end";
+          readonly "mobile"?: {
+              readonly "bar"?: "top" | "bottom";
+              readonly "side"?: "start" | "end";
+          };
+          readonly "icon"?: unknown;
+          readonly "onSelect"?: ((...args: never[]) => unknown);
+          readonly "component"?: ((...args: never[]) => unknown);
+      }) & {
+          readonly id?: string;
+      });
+  }
+  export interface GeneratedSignalPayloads {
+      readonly "kernel.document.created": {
+          readonly "id": string;
+          readonly "title"?: string;
+      };
+      readonly "kernel.document.changed": {
+          readonly "id": string;
+          readonly "title"?: string;
+      };
+      readonly "kernel.document.deleted": {
+          readonly "id": string;
+      };
+      readonly "kernel.plugin.failed": {
+          readonly "plugin": string;
+          readonly "point"?: string;
+          readonly "message": string;
+      };
+      readonly "kernel.sync.changed": {
+          readonly "status": string;
+          readonly "pending"?: number;
+          readonly "safeSeq"?: number;
+          readonly "headSeq"?: number;
+      };
+      readonly "kernel.auth.required": Readonly<Record<string, unknown>>;
+      readonly "kernel.storage.warning": {
+          readonly "reason": string;
+      };
+      readonly "kernel.update.available": {
+          readonly "kind": "plugins" | "bundle" | "shell";
+          readonly "version"?: string | number;
+      };
+      readonly "doc-events.created": {
+          readonly "id": string;
+          readonly "parent"?: string;
+      };
+      readonly "doc-events.announce": {
+          readonly "id": string;
+          readonly "parent"?: string;
+      };
+      readonly "folders.changed": Readonly<Record<string, unknown>>;
+      readonly "indexer.changed": Readonly<Record<string, unknown>>;
+      readonly "markdown.changed": Readonly<Record<string, unknown>>;
+      readonly "router.changed": {
+          readonly "path": string;
+      };
+  }
+  export interface GeneratedSignalResponses {
+      readonly "doc-events.announce": Readonly<Record<string, unknown>>;
+  }
+
+  // ---- decorations.ts ------------------------------------------
+  export type AttrValue = string | number | boolean | null | undefined;
+  export type Attrs = Readonly<Record<string, AttrValue>>;
+  export const PSEUDO_STATES: readonly ["readonly", "mobile", "empty", "editing"];
+  export type PseudoState = (typeof PSEUDO_STATES)[number];
+  export type PseudoStates = Readonly<Record<PseudoState, boolean>>;
+  export interface Ancestor {
+      readonly name: string;
+      readonly attrs: Attrs;
+      readonly states: PseudoStates;
+  }
+  export type Ancestors = Readonly<Record<string, Attrs>>;
+  export interface DecorationProps<P = Readonly<Record<string, unknown>>> {
+      readonly children: ReactNode;
+      readonly attrs: Attrs;
+      readonly ancestors: Ancestors;
+      readonly props: Readonly<P>;
+  }
+  export type Wrapper = ComponentType<DecorationProps>;
+  export interface DecorationTarget {
+      readonly name: string;
+      readonly attrs: Attrs;
+      readonly states: PseudoStates;
+      readonly ancestry: readonly Ancestor[];
+  }
+  export interface DecorationLink {
+      readonly id: number;
+      readonly pluginId: string;
+      readonly query: string;
+      readonly target: string;
+      readonly wrapper: Wrapper;
+  }
+  export interface DecorationInfo {
+      readonly pluginId: string;
+      readonly query: string;
+      readonly target: string;
+  }
+  export interface DecorationFailure extends DecorationInfo {
+      readonly message: string;
+  }
+  export interface DecorationCache {
+      resolve(target: DecorationTarget): readonly DecorationLink[];
+  }
+  export interface DecorationEngine {
+      subscribe(listener: () => void): Unsubscribe;
+      version(): number;
+      declare(name: string, attrs: Attrs): Attrs | undefined;
+      cache(): DecorationCache;
+      report(link: DecorationLink, error: Error): void;
+  }
+  export function installDecorationEngine(engine: DecorationEngine): void;
+  export interface DecorationWriter {
+      decorate(pluginId: string, query: string, wrapper: Wrapper): Unsubscribe;
+  }
+  export function installDecorationWriter(writer: DecorationWriter): void;
+  export function decorateForActivating(query: string, wrapper: Wrapper): Unsubscribe;
+  export function ancestorsOf(ancestry: readonly Ancestor[]): Ancestors;
+  export function useAncestors(): Ancestors;
+  export interface DecoratableStates {
+      readonly readonly?: boolean;
+      readonly editing?: boolean;
+      readonly empty?: boolean;
+  }
+  export function decoratable<P extends object>(name: string, Original: ComponentType<P>, attrsOf: (props: P) => Attrs, statesOf?: (props: P) => DecoratableStates): ComponentType<P>;
 
   // ---- documents.ts --------------------------------------------
   export type DocumentId = string;
@@ -123,11 +543,14 @@ declare module "@kernel" {
       readonly materialized_version: string;
       readonly created_at: Iso8601;
       readonly created_by: string | null;
+      readonly created_via?: string | null;
       readonly updated_at: Iso8601;
       readonly updated_by: string | null;
+      readonly updated_via?: string | null;
       readonly deleted: boolean;
       readonly deleted_at: Iso8601 | null;
       readonly deleted_by: string | null;
+      readonly deleted_via?: string | null;
       readonly purged: boolean;
   }
   export interface SearchHit {
@@ -265,6 +688,31 @@ declare module "@kernel" {
       onAny(listener: (event: KernelEvent) => void): Unsubscribe;
   }
 
+  // ---- json-schema.ts ------------------------------------------
+  export interface JsonSchema {
+      readonly $ref?: string;
+      readonly $defs?: Readonly<Record<string, JsonSchema>>;
+      readonly type?: string | readonly string[];
+      readonly enum?: readonly unknown[];
+      readonly const?: unknown;
+      readonly properties?: Readonly<Record<string, JsonSchema>>;
+      readonly required?: readonly string[];
+      readonly additionalProperties?: boolean | JsonSchema;
+      readonly items?: JsonSchema;
+      readonly oneOf?: readonly JsonSchema[];
+      readonly anyOf?: readonly JsonSchema[];
+      readonly allOf?: readonly JsonSchema[];
+      readonly minLength?: number;
+      readonly maxLength?: number;
+      readonly pattern?: string;
+      readonly minimum?: number;
+      readonly maximum?: number;
+      readonly minItems?: number;
+      readonly maxItems?: number;
+      readonly "x-ddd-note"?: boolean;
+  }
+  export function validateJson(schema: JsonSchema, value: unknown): readonly string[];
+
   // ---- kernel.ts -----------------------------------------------
   export interface CoreApi {
       parseDocument(text: string): ParsedText;
@@ -272,11 +720,18 @@ declare module "@kernel" {
       normalizeDate(input: string): string;
       semanticsVersion(): number;
   }
+  export interface ParseDiagnostic {
+      readonly kind: string;
+      readonly line: number;
+      readonly key: string | null;
+      readonly message: string;
+  }
   export interface ParsedText {
       readonly title: string;
       readonly fm: CoreMap;
       readonly plugins: CoreMap;
       readonly fm_parse_error: boolean;
+      readonly diagnostics: readonly ParseDiagnostic[];
   }
   export type BootMode = "normal" | "safe" | "bare";
   export interface KernelInfo {
@@ -299,12 +754,26 @@ declare module "@kernel" {
       readonly ui: UiApi;
       readonly capabilities: CapabilitiesApi;
       readonly core: CoreApi;
+      readonly recurrence: RecurrenceApi;
       readonly log: KernelLogger;
+      fill<S extends string>(slot: S, entry: SlotEntryOf<S>): Unsubscribe;
+      slot<S extends string>(name: S): SlotList<SlotEntryOf<S>>;
+      decorate(query: string, wrapper: Wrapper): void;
+      emit<S extends string>(name: S, payload: SignalPayloadOf<S>, options?: EmitOptions): void;
+      on<S extends string>(name: S, listener: (payload: SignalPayloadOf<S>, meta: SignalMeta) => void): Unsubscribe;
+      handle<S extends string>(name: S, handler: (payload: SignalPayloadOf<S>) => SignalResponseOf<S> | Promise<SignalResponseOf<S>>): Unsubscribe;
+      request<S extends string>(name: S, payload: SignalPayloadOf<S>, options?: RequestOptions): Promise<SignalResponseOf<S>>;
+      readonly contracts: ContractsApi;
+      action(definition: ActionDefinition): void;
+      keybinding(keys: string, actionId: string): void;
+      readonly actions: ActionsApi;
   }
   export interface LoadedPlugin {
       readonly id: string;
       readonly version: string;
       readonly provides?: string;
+      readonly name?: string;
+      readonly config?: PluginManifest["config"];
   }
   export interface PluginsApi {
       active(id: string): boolean;
@@ -320,6 +789,8 @@ declare module "@kernel" {
 
   // ---- manifest.ts ---------------------------------------------
   export const PLUGIN_ID_PATTERN: RegExp;
+  export const CONTRACT_NAME_PATTERN: RegExp;
+  export const SCOPE_PATTERN: RegExp;
   export const PLUGIN_VERSION_PATTERN: RegExp;
   export type PluginState = "enabled" | "disabled" | "pending" | "failed";
   export interface InstalledPlugin {
@@ -342,6 +813,8 @@ declare module "@kernel" {
       readonly message: string;
   }
   export function validateManifest(value: unknown): readonly ManifestProblem[];
+  export const KERNEL_CONTRACT_PREFIX = "kernel.";
+  export function namespaceProblem(pluginId: string, name: string, provides?: string): string | undefined;
   export function isManifest(value: unknown): value is PluginManifest;
   export function formatProblem(format: string, text: string): string | undefined;
   export function isValidVersion(version: string): boolean;
@@ -354,7 +827,7 @@ declare module "@kernel" {
   export function satisfies(version: string, range: string): boolean;
 
   // ---- manifest.generated.ts -----------------------------------
-  export const MANIFEST_KERNEL_VERSION = "4.2.0";
+  export const MANIFEST_KERNEL_VERSION = "4.18.0";
   export interface PluginFrontend {
       readonly module: string;
       readonly style?: string;
@@ -362,33 +835,56 @@ declare module "@kernel" {
   export interface PluginCapabilities {
       readonly documents?: readonly ("read" | "write")[];
       readonly http?: HttpCapability;
+      readonly tcp?: TcpCapability;
       readonly notifications?: boolean;
+      readonly "workspace-signals"?: boolean;
       readonly "public-routes"?: readonly (string)[];
   }
   export interface HttpCapability {
       readonly hosts: readonly (string)[];
   }
+  export interface TcpCapability {
+      readonly hosts: readonly (string)[];
+  }
   export interface PluginConfigField {
-      readonly type: "string" | "number" | "boolean" | "select";
+      readonly type: "string" | "number" | "boolean" | "select" | "array";
       readonly secret?: boolean;
       readonly label?: string;
       readonly description?: string;
       readonly default?: unknown;
       readonly required?: boolean;
       readonly options?: readonly (string)[];
+      readonly items?: "string" | "number" | "boolean" | "select";
   }
   export interface PluginBackend {
       readonly module: string;
       readonly hooks?: readonly ("document.created" | "document.changed" | "document.deleted")[];
       readonly cron?: readonly (string)[];
-      readonly routes?: readonly (string)[];
+      readonly routes?: readonly (RouteDeclaration)[];
+      readonly scopes?: Readonly<Record<string, string>>;
       readonly events?: readonly (string)[];
+      readonly signals?: readonly (string)[];
       readonly exports?: Readonly<Record<string, BackendExport>>;
+  }
+  export interface RouteDeclaration {
+      readonly route: string;
+      readonly scope: string;
+      readonly stream?: boolean;
   }
   export interface BackendExport {
       readonly input?: unknown;
       readonly output?: unknown;
       readonly description?: string;
+  }
+  export interface PluginSlot {
+      readonly entry: unknown;
+  }
+  export interface PluginSignal {
+      readonly schema: unknown;
+      readonly response?: unknown;
+  }
+  export interface PluginComponent {
+      readonly attrs: Readonly<Record<string, unknown>>;
   }
   export interface PluginManifest {
       readonly id: string;
@@ -401,6 +897,10 @@ declare module "@kernel" {
       readonly frontend?: PluginFrontend;
       readonly capabilities?: PluginCapabilities;
       readonly config?: Readonly<Record<string, PluginConfigField>>;
+      readonly slots?: Readonly<Record<string, PluginSlot>>;
+      readonly signals?: Readonly<Record<string, PluginSignal>>;
+      readonly components?: Readonly<Record<string, PluginComponent>>;
+      readonly uses?: readonly (string)[];
       readonly backend?: PluginBackend;
       readonly name?: string;
       readonly description?: string;
@@ -426,6 +926,50 @@ declare module "@kernel" {
       readonly "x-removed"?: Readonly<Record<string, string>>;
   }
 
+  // ---- recurrence.ts -------------------------------------------
+  export interface RecurrenceExpandRequest {
+      readonly rule: string;
+      readonly anchor: string;
+      readonly end?: string;
+      readonly except?: readonly string[];
+      readonly dates?: readonly string[];
+      readonly from: string;
+      readonly to: string;
+  }
+  export interface RecurrenceNextRequest {
+      readonly rule: string;
+      readonly anchor: string;
+      readonly after: string;
+      readonly fromCompletion?: boolean;
+      readonly except?: readonly string[];
+      readonly dates?: readonly string[];
+  }
+  export interface RecurrenceOccurrence {
+      readonly start: string;
+      readonly end?: string;
+  }
+  export interface RecurrenceProblem {
+      readonly ok: false;
+      readonly error: string;
+  }
+  export type RecurrenceCheck = {
+      readonly ok: true;
+  } | RecurrenceProblem;
+  export type RecurrenceExpansion = {
+      readonly ok: true;
+      readonly occurrences: readonly RecurrenceOccurrence[];
+      readonly truncated: boolean;
+  } | RecurrenceProblem;
+  export type RecurrenceNext = {
+      readonly ok: true;
+      readonly next: string | null;
+  } | RecurrenceProblem;
+  export interface RecurrenceApi {
+      validate(rule: string): RecurrenceCheck;
+      expand(request: RecurrenceExpandRequest): RecurrenceExpansion;
+      next(request: RecurrenceNextRequest): RecurrenceNext;
+  }
+
   // ---- registry.ts ---------------------------------------------
   export interface RegistryEntry<T> {
       readonly value: T;
@@ -442,6 +986,7 @@ declare module "@kernel" {
       readonly order?: (item: T) => number;
       readonly shape?: Shape<unknown>;
   }
+  export const activatingPlugin: () => string | undefined;
   export function createRegistry<T>(options?: RegistryOptions<T>): Registry<T>;
   export function checked<F extends (...args: never[]) => unknown>(shape: Shape<unknown>, impl: F): F;
 
@@ -465,8 +1010,12 @@ declare module "@kernel" {
       readonly purged: boolean;
       readonly words: number;
       readonly characters: number;
+      readonly outgoing: readonly string[];
+      readonly incoming: readonly string[];
+      readonly outgoing_count: number;
+      readonly incoming_count: number;
   }
-  export type SearchDocumentRow = Omit<SearchDocumentColumns, "content" | "words" | "characters">;
+  export type SearchDocumentRow = Omit<SearchDocumentColumns, "content" | "words" | "characters" | "outgoing" | "incoming" | "outgoing_count" | "incoming_count">;
   export interface SearchFmColumns {
       readonly key: string;
       readonly value: FmValue;
@@ -627,6 +1176,9 @@ declare module "@kernel" {
   type AggOpen<G, O extends string> = [G] extends [never] ? O : G extends SearchAggregateState<object, infer Open, unknown> ? Open : never;
   type AggRows<G> = [G] extends [never] ? {} : G extends SearchAggregateState<object, string, infer Rows> ? Rows : never;
   type AfterAggregate<S extends SearchSourceName, C extends SearchScope, O extends string, G, A extends string, V, Opts extends SearchResultOptions> = SearchBuilder<S, With<AggRows<G>, A, V>, With<AggRows<G>, A, V>, never, SearchAggregateState<AggScope<G, C>, AggOpen<G, O>, With<AggRows<G>, A, V>>, Opts>;
+  export type SearchMapKey<C extends SearchScope> = {
+      [K in keyof C & string]: C[K] extends CoreMap ? `${K}.${string}` : never;
+  }[keyof C & string];
   export interface SearchFuzzyOptions {
       readonly fields?: readonly ("title" | "content" | "fm")[];
       readonly limit?: number;
@@ -662,6 +1214,8 @@ declare module "@kernel" {
       snippets(): SearchBuilder<S, C, With<Row, "snippet", SearchSnippet | null>, O, never, Opts>;
       trash(scope: "live" | "trashed" | "all"): SearchBuilder<S, C, Row, O, G, Opts>;
       fuzzy(query: string, options?: SearchFuzzyOptions): SearchBuilder<S, With<C, "score", number>, Row, O, never, Opts>;
+      map(from: SearchMapKey<C>, to: SearchMapKey<C>): SearchBuilder<S, C, Row, O, never, Opts>;
+      map(mapping: Readonly<Partial<Record<SearchMapKey<C>, SearchMapKey<C>>>>): SearchBuilder<S, C, Row, O, never, Opts>;
       run(): Promise<SearchResult<Row, Opts>>;
       watch(options?: SearchWatchOptions): Promise<SearchWatch<Row, Opts>>;
       plan(): SearchPlanJson;
@@ -698,6 +1252,10 @@ declare module "@kernel" {
       snippets(): AnySearchBuilder;
       trash(scope: "live" | "trashed" | "all"): AnySearchBuilder;
       fuzzy(query: string, options?: SearchFuzzyOptions): AnySearchBuilder;
+      map(from: string, to: string): AnySearchBuilder;
+      map(mapping: {
+          readonly [from: string]: string;
+      }): AnySearchBuilder;
       run(): Promise<SearchResult<AnySearchRow, SearchResultOptions>>;
       watch(options?: SearchWatchOptions): Promise<SearchWatch<AnySearchRow, SearchResultOptions>>;
       plan(): SearchPlanJson;
@@ -852,6 +1410,104 @@ declare module "@kernel" {
   export function shapeFromJSON(json: ShapeJson): BuiltShape<unknown>;
   export function validate<T>(shape: Shape<T>, value: unknown): readonly ShapeIssue[];
   export function formatIssues(issues: readonly ShapeIssue[]): string;
+  export {};
+
+  // ---- slots.ts ------------------------------------------------
+  export interface SlotEntries extends GeneratedSlotEntries {
+  }
+  export interface SignalPayloads extends GeneratedSignalPayloads {
+  }
+  export interface SignalResponses extends GeneratedSignalResponses {
+  }
+  export type SignalPayloadOf<S extends string> = S extends keyof SignalPayloads ? SignalPayloads[S] : unknown;
+  export type SignalResponseOf<S extends string> = S extends keyof SignalResponses ? SignalResponses[S] : unknown;
+  export type SignalScope = "session" | "user" | "workspace";
+  export interface EmitOptions {
+      readonly to?: SignalScope;
+  }
+  export interface RequestOptions {
+      readonly timeoutMs?: number;
+  }
+  export interface SignalMeta {
+      readonly name: string;
+      readonly from: string;
+      readonly scope: SignalScope;
+  }
+  export interface SlotEntry {
+      readonly id: string;
+      readonly [field: string]: unknown;
+  }
+  export type SlotEntryOf<S extends string> = S extends keyof SlotEntries ? SlotEntries[S] : SlotEntry;
+  export interface SlotList<E = SlotEntry> {
+      get(): readonly E[];
+      subscribe(listener: (entries: readonly E[]) => void): Unsubscribe;
+  }
+  export interface ActionNode {
+      readonly id: string;
+      readonly title: string;
+      readonly plugin: string;
+      readonly placements: readonly {
+          readonly slot: string;
+          readonly plugin: string;
+      }[];
+      readonly keybindings: readonly string[];
+  }
+  export interface ContractsApi {
+      fillers(): Readonly<Record<string, readonly string[]>>;
+      actions(): readonly ActionNode[];
+      decorations(): readonly DecorationInfo[];
+      decorationFailures(): readonly DecorationFailure[];
+  }
+  export type ContractKind = "slot" | "signal" | "component";
+  export interface ContractNode {
+      readonly name: string;
+      readonly kind: ContractKind;
+      readonly owner: string;
+      readonly fills: readonly string[];
+      readonly decorates: readonly string[];
+      readonly emits: readonly string[];
+      readonly handles: readonly string[];
+      readonly listens: readonly string[];
+      readonly uses: readonly string[];
+  }
+  export interface ContractGraph {
+      readonly contracts: readonly ContractNode[];
+      readonly unprovided: readonly {
+          readonly plugin: string;
+          readonly name: string;
+      }[];
+  }
+  export const KERNEL_OWNER = "kernel";
+  export interface SlotReader {
+      list(name: string): SlotList<unknown>;
+      fill(pluginId: string, slot: string, entry: unknown): Unsubscribe;
+      fillerOf(entry: unknown): string | undefined;
+  }
+  export function installSlotReader(reader: SlotReader): void;
+  export function fillerOf(entry: unknown): string | undefined;
+  export function fillForActivating(slot: string, entry: unknown): Unsubscribe;
+  export function useSlot<S extends string>(name: S): readonly SlotEntryOf<S>[];
+  export function useSignal<S extends string>(kernel: Pick<Kernel, "on">, name: S, listener: (payload: SignalPayloadOf<S>, meta: SignalMeta) => void): void;
+  type SignalDecl = {
+      readonly response?: unknown;
+  };
+  export function contractGraph(manifests: readonly {
+      readonly id: string;
+      readonly slots?: Readonly<Record<string, unknown>>;
+      readonly signals?: Readonly<Record<string, SignalDecl>>;
+      readonly components?: Readonly<Record<string, unknown>>;
+      readonly uses?: readonly string[];
+      readonly backend?: {
+          readonly signals?: readonly string[];
+      };
+  }[], kernel: {
+      readonly slots: readonly string[];
+      readonly signals: Readonly<Record<string, SignalDecl>>;
+  }, fills: Readonly<Record<string, readonly string[]>>, decorations?: readonly {
+      readonly pluginId: string;
+      readonly query: string;
+      readonly target: string;
+  }[]): ContractGraph;
   export {};
 
   // ---- sync.ts -------------------------------------------------

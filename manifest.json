@@ -1,13 +1,12 @@
 {
   "id": "extra-task-states",
-  "version": "1.6.0",
-  "kernel": "^4.0",
+  "version": "1.7.0",
+  "kernel": "^4.18",
   "dependencies": {
-    "markdown": "^3.2"
+    "markdown": "^3.10"
   },
   "optionalDependencies": {
-    "icons": "^2.0",
-    "settings": "^2.0"
+    "icons": "^2.0"
   },
   "peerLibraries": {
     "react": "^18.0.0"
@@ -17,5 +16,9 @@
   },
   "name": "Extra task states",
   "description": "Adds task markers beyond to do and done: [/] in progress, [-] dropped, [?] question, or your own, each with a name and an icon.",
-  "license": "MIT OR Apache-2.0"
+  "license": "MIT OR Apache-2.0",
+  "uses": [
+    "markdown.task-state",
+    "kernel.settings.section"
+  ]
 }
